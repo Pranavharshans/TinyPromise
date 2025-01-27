@@ -1,6 +1,9 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
 
 export default function Home() {
+  const router = useRouter();
+
   return (
     <View style={styles.container}>
       <View style={styles.background}>
@@ -20,6 +23,7 @@ export default function Home() {
             styles.primaryButton,
             pressed && styles.buttonPressed
           ]}
+          onPress={() => router.push('/onboarding')}
         >
           <View style={styles.primaryButtonBg} />
           <Text style={styles.primaryButtonText}>Get Started</Text>
@@ -30,6 +34,7 @@ export default function Home() {
             styles.outlineButton,
             pressed && styles.buttonPressed
           ]}
+          onPress={() => router.push('/login')}
         >
           <Text style={styles.outlineButtonText}>Login / Register</Text>
         </Pressable>
