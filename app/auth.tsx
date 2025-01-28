@@ -10,8 +10,11 @@ import {
   Platform,
   Dimensions,
   Pressable,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { authService } from '../services/auth';
 
 const { width } = Dimensions.get('window');
 
@@ -20,25 +23,53 @@ export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = () => {
-    // To be implemented with Firebase
-    console.log('Submit:', { email, password });
+  const handleSubmit = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = isLogin 
+        ? await authService.login(email, password)
+        : await authService.register(email, password);
+
+      if (response.success) {
+        router.replace('/dashboard');
+      } else {
+        Alert.alert('Error', response.error || 'An error occurred');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.background}>
+        <View style={[styles.circle, styles.circle1]} />
+        <View style={[styles.circle, styles.circle2]} />
+        <View style={[styles.circle, styles.circle3]} />
+      </View>
+
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.content}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.title}>
+            {isLogin ? 'Welcome Back' : 'Create Account'}
+          </Text>
           <Text style={styles.subtitle}>
             {isLogin 
               ? 'Sign in to continue building habits'
-              : 'Create an account to start your journey'
+              : 'Start your journey to better habits'
             }
           </Text>
         </View>
@@ -46,32 +77,37 @@ export default function AuthScreen() {
         <View style={styles.form}>
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your email"
-              placeholderTextColor="#666"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-              value={email}
-              onChangeText={setEmail}
-            />
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                value={email}
+                onChangeText={setEmail}
+                editable={!loading}
+              />
+            </View>
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordContainer}>
+            <View style={styles.inputWrapper}>
               <TextInput
                 style={[styles.input, styles.passwordInput]}
                 placeholder="Enter your password"
-                placeholderTextColor="#666"
+                placeholderTextColor="#9CA3AF"
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={setPassword}
+                editable={!loading}
               />
               <Pressable
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeButton}
+                disabled={loading}
               >
                 <Text style={styles.eyeButtonText}>
                   {showPassword ? '👁️' : '👁️‍🗨️'}
@@ -81,20 +117,30 @@ export default function AuthScreen() {
           </View>
 
           <TouchableOpacity
-            style={styles.submitButton}
+            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
             onPress={handleSubmit}
+            disabled={loading}
           >
-            <Text style={styles.submitButtonText}>
-              {isLogin ? 'Sign In' : 'Create Account'}
-            </Text>
+            <View style={styles.submitButtonBg} />
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitButtonText}>
+                {isLogin ? 'Sign In' : 'Create Account'}
+              </Text>
+            )}
           </TouchableOpacity>
 
           <View style={styles.switchContainer}>
             <Text style={styles.switchText}>
               {isLogin ? "Don't have an account? " : 'Already have an account? '}
             </Text>
-            <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
-              <Text style={styles.switchButton}>
+            <TouchableOpacity 
+              onPress={() => setIsLogin(!isLogin)}
+              style={styles.switchButton}
+              disabled={loading}
+            >
+              <Text style={styles.switchButtonText}>
                 {isLogin ? 'Sign Up' : 'Sign In'}
               </Text>
             </TouchableOpacity>
@@ -110,6 +156,36 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  background: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  circle: {
+    position: 'absolute',
+    borderRadius: 200,
+  },
+  circle1: {
+    width: 200,
+    height: 200,
+    backgroundColor: 'rgba(124, 58, 237, 0.1)',
+    top: -50,
+    right: -50,
+  },
+  circle2: {
+    width: 150,
+    height: 150,
+    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+    bottom: 100,
+    left: -75,
+  },
+  circle3: {
+    width: 100,
+    height: 100,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    top: '40%',
+    right: -20,
+  },
   content: {
     flex: 1,
     paddingHorizontal: 24,
@@ -123,6 +199,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1F2937',
     marginBottom: 8,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
@@ -140,10 +217,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
+    letterSpacing: -0.3,
+  },
+  inputWrapper: {
+    position: 'relative',
+    width: '100%',
   },
   input: {
     width: '100%',
-    height: 48,
+    height: 52,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 12,
@@ -152,30 +234,28 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     backgroundColor: '#F9FAFB',
   },
-  passwordContainer: {
-    position: 'relative',
-    width: '100%',
-  },
   passwordInput: {
     paddingRight: 50,
   },
   eyeButton: {
     position: 'absolute',
     right: 16,
-    top: 12,
+    top: 14,
     padding: 4,
   },
   eyeButtonText: {
     fontSize: 18,
   },
   submitButton: {
+    position: 'relative',
     width: '100%',
     height: 56,
-    backgroundColor: '#4F46E5',
     borderRadius: 12,
+    backgroundColor: '#4F46E5',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 12,
+    overflow: 'hidden',
     shadowColor: '#4F46E5',
     shadowOffset: {
       width: 0,
@@ -185,10 +265,23 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  submitButtonDisabled: {
+    opacity: 0.7,
+  },
+  submitButtonBg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#7C3AED',
+    opacity: 0.5,
+  },
   submitButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
+    letterSpacing: -0.5,
   },
   switchContainer: {
     flexDirection: 'row',
@@ -201,6 +294,9 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   switchButton: {
+    padding: 4,
+  },
+  switchButtonText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#4F46E5',
