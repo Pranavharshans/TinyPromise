@@ -59,12 +59,12 @@ export default function OnboardingScreen() {
         animated: true
       });
     } else {
-      router.push('/');
+      router.push('/auth');
     }
   };
 
   const handleSkip = () => {
-    router.push('/');
+    router.push('/auth');
   };
 
   const renderItem = ({ item }: { item: OnboardingItem }) => (
@@ -204,6 +204,20 @@ const styles = StyleSheet.create({
   buttonContainer: {
     height: BUTTON_HEIGHT,
   },
+  button: {
+    backgroundColor: '#4F46E5',
+    height: BUTTON_HEIGHT,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
   title: {
     color: '#FFF',
     fontSize: 32,
@@ -218,20 +232,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: 'center',
     lineHeight: 28,
-  },
-  button: {
-    backgroundColor: '#4F46E5',
-    height: BUTTON_HEIGHT,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-    letterSpacing: -0.5,
   },
   pagination: {
     flexDirection: 'row',

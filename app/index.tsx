@@ -34,7 +34,7 @@ export default function Home() {
             styles.outlineButton,
             pressed && styles.buttonPressed
           ]}
-          onPress={() => router.push('/login')}
+          onPress={() => router.push('/auth')}
         >
           <Text style={styles.outlineButtonText}>Login / Register</Text>
         </Pressable>
