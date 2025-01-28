@@ -1,14 +1,23 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import {
+  FIREBASE_API_KEY,
+  FIREBASE_AUTH_DOMAIN,
+  FIREBASE_PROJECT_ID,
+  FIREBASE_STORAGE_BUCKET,
+  FIREBASE_MESSAGING_SENDER_ID,
+  FIREBASE_APP_ID,
+  FIREBASE_MEASUREMENT_ID
+} from '@env';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCVjnAySP43bDBBv_cXFvXHo3CfrfDfN3k",
-  authDomain: "tinypromise-cd639.firebaseapp.com",
-  projectId: "tinypromise-cd639",
-  storageBucket: "tinypromise-cd639.firebasestorage.app",
-  messagingSenderId: "476978310673",
-  appId: "1:476978310673:web:7493b1be5a7dbbdadd0bb0",
-  measurementId: "G-EYNDN199DK"
+  apiKey: FIREBASE_API_KEY,
+  authDomain: FIREBASE_AUTH_DOMAIN,
+  projectId: FIREBASE_PROJECT_ID,
+  storageBucket: FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: FIREBASE_MESSAGING_SENDER_ID,
+  appId: FIREBASE_APP_ID,
+  measurementId: FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
