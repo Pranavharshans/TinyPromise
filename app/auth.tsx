@@ -39,7 +39,11 @@ export default function AuthScreen() {
         : await authService.register(email, password);
 
       if (response.success) {
-        router.replace('/dashboard');
+        if (response.needsVerification) {
+          router.replace('/verify');
+        } else {
+          router.replace('/dashboard');
+        }
       } else {
         Alert.alert('Error', response.error || 'An error occurred');
       }
