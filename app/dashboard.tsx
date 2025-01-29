@@ -107,12 +107,9 @@ export default function DashboardScreen() {
               <Text style={styles.emptyStateText}>
                 No active habits yet. Start building better habits today!
               </Text>
-              <TouchableOpacity 
-                style={styles.addButton}
-                onPress={() => router.push('/add-habit')}
-              >
-                <Text style={styles.addButtonText}>Create New Habit</Text>
-              </TouchableOpacity>
+              <Text style={styles.emptyStateSecondary}>
+                Tap the + button below to get started.
+              </Text>
             </View>
           ) : (
             <>
@@ -239,18 +236,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 12,
   },
-  addButton: {
-    backgroundColor: '#4F46E5',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+  emptyStateSecondary: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
   },
   section: {
     marginBottom: 32,
@@ -314,6 +305,7 @@ const styles = StyleSheet.create({
   },
   signOutButton: {
     margin: 24,
+    marginBottom: 32,  // Increased to avoid FAB overlap
     paddingVertical: 16,
     backgroundColor: '#EF4444',
     borderRadius: 12,
@@ -327,25 +319,26 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 24,
-    bottom: 100,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    bottom: 120,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: '#4F46E5',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 4,
+    elevation: 8,
     shadowColor: '#4F46E5',
     shadowOffset: {
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    zIndex: 1000,
   },
   fabIcon: {
-    fontSize: 32,
+    fontSize: 36,  // Increased size
     color: '#FFFFFF',
-    marginTop: -2,  // Visual alignment for the + symbol
+    marginTop: -4,  // Visual alignment for the + symbol
   },
 });
