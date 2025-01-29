@@ -10,6 +10,8 @@ import {
   FIREBASE_MEASUREMENT_ID
 } from '@env';
 
+console.log('[Firebase] Initializing Firebase...');
+
 const firebaseConfig = {
   apiKey: FIREBASE_API_KEY,
   authDomain: FIREBASE_AUTH_DOMAIN,
@@ -22,8 +24,8 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// Initialize Auth
 const auth = getAuth(app);
+
+console.log('[Firebase] Firebase initialized');
 
 export { app, auth };

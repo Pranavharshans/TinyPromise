@@ -3,11 +3,14 @@ import {
   signInWithEmailAndPassword,
   signOut,
   sendEmailVerification,
-  EmailAuthProvider,
   UserCredential,
-  AuthError 
+  AuthError
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthUser } from '../types/auth';
+
+const AUTH_USER_KEY = '@auth_user';
 
 export interface AuthResponse {
   success: boolean;
@@ -19,12 +22,17 @@ export interface AuthResponse {
 export const authService = {
   // Register new user
   async register(email: string, password: string): Promise<AuthResponse> {
+    console.log('[AuthService] Attempting to register user:', email);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
       // Send verification email
       if (userCredential.user) {
         await sendEmailVerification(userCredential.user);
+        // Store user data in AsyncStorage
+        const userData = userCredential.user as AuthUser;
+        await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
+        console.log('[AuthService] User registered and stored:', email);
       }
 
       return {
@@ -33,6 +41,9 @@ export const authService = {
         needsVerification: true
       };
     } catch (error) {
+      console.error('[AuthService] Registration error:', error);
+      // Clear any stored data on error
+      await AsyncStorage.removeItem(AUTH_USER_KEY);
       const authError = error as AuthError;
       return {
         success: false,
@@ -43,16 +54,24 @@ export const authService = {
 
   // Login existing user
   async login(email: string, password: string): Promise<AuthResponse> {
+    console.log('[AuthService] Attempting to login user:', email);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Check if email is verified
-      if (userCredential.user && !userCredential.user.emailVerified) {
-        return {
-          success: true,
-          user: userCredential,
-          needsVerification: true
-        };
+      // Store user data regardless of verification status
+      if (userCredential.user) {
+        const userData = userCredential.user as AuthUser;
+        await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
+        console.log('[AuthService] User logged in and stored:', email);
+        
+        if (!userData.emailVerified) {
+          console.log('[AuthService] User needs verification:', email);
+          return {
+            success: true,
+            user: userCredential,
+            needsVerification: true
+          };
+        }
       }
 
       return {
@@ -61,6 +80,9 @@ export const authService = {
         needsVerification: false
       };
     } catch (error) {
+      console.error('[AuthService] Login error:', error);
+      // Clear any stored data on error
+      await AsyncStorage.removeItem(AUTH_USER_KEY);
       const authError = error as AuthError;
       return {
         success: false,
@@ -71,12 +93,20 @@ export const authService = {
 
   // Sign out user
   async logout(): Promise<AuthResponse> {
+    console.log('[AuthService] Attempting to logout user');
     try {
+      // Clear AsyncStorage first to prevent any race conditions
+      await AsyncStorage.removeItem(AUTH_USER_KEY);
+      // Then sign out from Firebase
       await signOut(auth);
+      console.log('[AuthService] User logged out and storage cleared');
       return {
         success: true
       };
     } catch (error) {
+      console.error('[AuthService] Logout error:', error);
+      // Ensure storage is cleared even if Firebase signOut fails
+      await AsyncStorage.removeItem(AUTH_USER_KEY);
       const authError = error as AuthError;
       return {
         success: false,
@@ -85,20 +115,46 @@ export const authService = {
     }
   },
 
+  // Get current stored auth data
+  async getStoredAuth(): Promise<AuthUser | null> {
+    try {
+      const storedUser = await AsyncStorage.getItem(AUTH_USER_KEY);
+      if (storedUser) {
+        const userData = JSON.parse(storedUser) as AuthUser;
+        // Check if token is still valid
+        const now = Date.now();
+        if (userData.stsTokenManager?.expirationTime && userData.stsTokenManager.expirationTime > now) {
+          return userData;
+        }
+        // Token expired, clean up
+        await AsyncStorage.removeItem(AUTH_USER_KEY);
+      }
+      return null;
+    } catch (error) {
+      console.error('[AuthService] Error getting stored auth:', error);
+      await AsyncStorage.removeItem(AUTH_USER_KEY);
+      return null;
+    }
+  },
+
   // Resend verification email
   async resendVerification(): Promise<AuthResponse> {
+    console.log('[AuthService] Attempting to resend verification email');
     try {
       if (auth.currentUser) {
         await sendEmailVerification(auth.currentUser);
+        console.log('[AuthService] Verification email sent');
         return {
           success: true
         };
       }
+      console.log('[AuthService] No user to send verification to');
       return {
         success: false,
         error: 'No user is currently signed in'
       };
     } catch (error) {
+      console.error('[AuthService] Verification email error:', error);
       const authError = error as AuthError;
       return {
         success: false,

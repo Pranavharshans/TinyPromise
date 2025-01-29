@@ -1,9 +1,39 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
+import { useAuth } from '../contexts/auth';
 
 export default function Home() {
   const router = useRouter();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
+  useEffect(() => {
+    console.log('[Home] Checking auth state:', {
+      isAuthenticated,
+      isLoading,
+      userEmail: user?.email,
+      userVerified: user?.emailVerified
+    });
+
+    if (!isLoading) {
+      if (isAuthenticated) {
+        console.log('[Home] User is authenticated, redirecting...');
+        if (!user?.emailVerified) {
+          router.replace('/verify');
+        } else {
+          router.replace('/dashboard');
+        }
+      }
+    }
+  }, [isLoading, isAuthenticated, user]);
+
+  // Don't render anything while checking auth state
+  if (isLoading || isAuthenticated) {
+    console.log('[Home] Loading or authenticated, showing empty view');
+    return <View style={styles.container} />;
+  }
+
+  console.log('[Home] Rendering landing page');
   return (
     <View style={styles.container}>
       <View style={styles.background}>
@@ -23,7 +53,10 @@ export default function Home() {
             styles.primaryButton,
             pressed && styles.buttonPressed
           ]}
-          onPress={() => router.push('/onboarding')}
+          onPress={() => {
+            console.log('[Home] Navigating to onboarding');
+            router.push('/onboarding');
+          }}
         >
           <View style={styles.primaryButtonBg} />
           <Text style={styles.primaryButtonText}>Get Started</Text>
@@ -34,7 +67,10 @@ export default function Home() {
             styles.outlineButton,
             pressed && styles.buttonPressed
           ]}
-          onPress={() => router.push('/auth')}
+          onPress={() => {
+            console.log('[Home] Navigating to auth');
+            router.push('/auth');
+          }}
         >
           <Text style={styles.outlineButtonText}>Login / Register</Text>
         </Pressable>

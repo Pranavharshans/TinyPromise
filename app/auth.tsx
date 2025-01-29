@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { authService } from '../services/auth';
+import { useAuth } from '../contexts/auth';
 
 const { width } = Dimensions.get('window');
 
@@ -25,6 +26,25 @@ export default function AuthScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
+
+  useEffect(() => {
+    console.log('[AuthScreen] Auth state:', {
+      isAuthenticated,
+      authLoading,
+      userEmail: user?.email,
+      userVerified: user?.emailVerified
+    });
+
+    if (!authLoading && isAuthenticated) {
+      console.log('[AuthScreen] User is already authenticated, redirecting...');
+      if (!user?.emailVerified) {
+        router.replace('/verify');
+      } else {
+        router.replace('/dashboard');
+      }
+    }
+  }, [isAuthenticated, authLoading, user]);
 
   const handleSubmit = async () => {
     if (!email || !password) {
@@ -32,28 +52,46 @@ export default function AuthScreen() {
       return;
     }
 
+    console.log(`[AuthScreen] Attempting to ${isLogin ? 'login' : 'register'} with email:`, email);
     setLoading(true);
     try {
       const response = isLogin 
         ? await authService.login(email, password)
         : await authService.register(email, password);
 
+      console.log('[AuthScreen] Auth response:', {
+        success: response.success,
+        needsVerification: response.needsVerification,
+        error: response.error
+      });
+
       if (response.success) {
         if (response.needsVerification) {
+          console.log('[AuthScreen] Redirecting to verification page');
           router.replace('/verify');
         } else {
+          console.log('[AuthScreen] Redirecting to dashboard');
           router.replace('/dashboard');
         }
       } else {
+        console.log('[AuthScreen] Auth error:', response.error);
         Alert.alert('Error', response.error || 'An error occurred');
       }
     } catch (error) {
+      console.error('[AuthScreen] Unexpected error:', error);
       Alert.alert('Error', 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
   };
 
+  // Don't render anything while checking auth state or if already authenticated
+  if (authLoading || isAuthenticated) {
+    console.log('[AuthScreen] Loading or authenticated, showing empty view');
+    return <View style={styles.container} />;
+  }
+
+  console.log('[AuthScreen] Rendering auth form');
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.background}>

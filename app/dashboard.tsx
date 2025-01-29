@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,26 +8,54 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { auth } from '../config/firebase';
+import { useAuth } from '../contexts/auth';
 import { authService } from '../services/auth';
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const userEmail = auth.currentUser?.email;
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  useEffect(() => {
+    console.log('[Dashboard] Auth state:', {
+      isAuthenticated,
+      isLoading,
+      userEmail: user?.email,
+      userVerified: user?.emailVerified
+    });
+
+    // Redirect if not authenticated
+    if (!isLoading && !isAuthenticated) {
+      console.log('[Dashboard] User not authenticated, redirecting to auth...');
+      router.replace('/auth');
+    }
+  }, [isAuthenticated, isLoading, user]);
 
   const handleSignOut = async () => {
+    console.log('[Dashboard] Attempting to sign out...');
     try {
       const response = await authService.logout();
+      console.log('[Dashboard] Sign out response:', response);
+      
       if (response.success) {
+        console.log('[Dashboard] Successfully signed out, redirecting...');
         router.replace('/');
       } else {
+        console.error('[Dashboard] Sign out failed:', response.error);
         Alert.alert('Error', response.error || 'Failed to sign out');
       }
     } catch (error) {
+      console.error('[Dashboard] Unexpected error during sign out:', error);
       Alert.alert('Error', 'An unexpected error occurred');
     }
   };
 
+  // Show loading state or redirect if not authenticated
+  if (isLoading || !isAuthenticated) {
+    console.log('[Dashboard] Loading or not authenticated, showing empty view');
+    return <View style={styles.container} />;
+  }
+
+  console.log('[Dashboard] Rendering dashboard for user:', user?.email);
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.background}>
@@ -39,8 +67,8 @@ export default function DashboardScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Dashboard</Text>
         <Text style={styles.subtitle}>Welcome back</Text>
-        {userEmail && (
-          <Text style={styles.email}>{userEmail}</Text>
+        {user?.email && (
+          <Text style={styles.email}>{user.email}</Text>
         )}
       </View>
 
