@@ -2,6 +2,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '../contexts/auth';
+import { HabitProvider } from '../contexts/habit';
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -79,23 +80,33 @@ function RootLayoutNav() {
       <Stack.Screen name="onboarding" />
       <Stack.Screen name="auth" />
       <Stack.Screen name="verify" options={{ gestureEnabled: false }} />
-      <Stack.Screen 
-        name="dashboard" 
+      <Stack.Screen
+        name="dashboard"
         options={{
           gestureEnabled: false,
           headerShown: false
+        }}
+      />
+      <Stack.Screen
+        name="add-habit"
+        options={{
+          presentation: 'modal',
+          gestureEnabled: true,
+          gestureDirection: 'vertical'
         }}
       />
     </Stack>
   );
 }
 
-// Root layout with auth provider
+// Root layout with providers
 export default function RootLayout() {
   console.log('[Navigation] Initializing root layout...');
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <HabitProvider>
+        <RootLayoutNav />
+      </HabitProvider>
     </AuthProvider>
   );
 }
