@@ -85,11 +85,39 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Dashboard</Text>
-        <Text style={styles.subtitle}>Welcome back</Text>
-        {user?.email && (
-          <Text style={styles.email}>{user.email}</Text>
-        )}
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={styles.title}>Dashboard</Text>
+            <Text style={styles.subtitle}>Welcome back</Text>
+            {user?.email && (
+              <Text style={styles.email}>{user.email}</Text>
+            )}
+          </View>
+          <TouchableOpacity
+            style={styles.profileButton}
+            onPress={() => {
+              Alert.alert(
+                'Profile Options',
+                'What would you like to do?',
+                [
+                  {
+                    text: 'Sign Out',
+                    style: 'destructive',
+                    onPress: handleSignOut
+                  },
+                  {
+                    text: 'Cancel',
+                    style: 'cancel'
+                  }
+                ]
+              );
+            }}
+          >
+            <Text style={styles.profileButtonText}>
+              {user?.email?.[0]?.toUpperCase() || '👤'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {isLoading ? (
@@ -167,13 +195,6 @@ export default function DashboardScreen() {
         </ScrollView>
       )}
 
-      <TouchableOpacity
-        style={styles.signOutButton}
-        onPress={handleSignOut}
-      >
-        <Text style={styles.signOutButtonText}>Sign Out</Text>
-      </TouchableOpacity>
-
       {/* Floating Action Button */}
       <TouchableOpacity
         style={styles.fab}
@@ -195,6 +216,11 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 24,
   },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
   title: {
     fontSize: 32,
     fontWeight: '700',
@@ -211,6 +237,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#4F46E5',
     fontWeight: '500',
+  },
+  profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#4F46E5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#4F46E5',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  profileButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
   },
   loadingContainer: {
     flex: 1,
@@ -303,23 +350,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  signOutButton: {
-    margin: 24,
-    marginBottom: 32,  // Increased to avoid FAB overlap
-    paddingVertical: 16,
-    backgroundColor: '#EF4444',
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  signOutButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
   fab: {
     position: 'absolute',
     right: 24,
-    bottom: 120,
+    bottom: 40,
     width: 64,
     height: 64,
     borderRadius: 32,
@@ -337,8 +371,8 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   fabIcon: {
-    fontSize: 36,  // Increased size
+    fontSize: 36,
     color: '#FFFFFF',
-    marginTop: -4,  // Visual alignment for the + symbol
+    marginTop: -4,
   },
 });
