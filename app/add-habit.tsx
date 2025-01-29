@@ -4,15 +4,18 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
+  ScrollView,
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
-  Alert
+  Alert,
+  StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useHabits } from '../contexts/habit';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import { Colors, Typography, Spacing, BorderRadius } from '../constants/theme';
 
 const SUGGESTED_HABITS = [
   {
@@ -61,11 +64,8 @@ export default function AddHabitScreen() {
 
     setIsLoading(true);
     try {
-      const habit = await createHabit(
-        title.trim(),
-        description.trim() || undefined
-      );
-      console.log('[AddHabit] Created habit:', habit);
+      await createHabit(title.trim(), description.trim() || undefined);
+      console.log('[AddHabit] Habit created successfully');
       router.push('/dashboard');
     } catch (error) {
       console.error('[AddHabit] Error creating habit:', error);
@@ -82,19 +82,26 @@ export default function AddHabitScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={Colors.background.primary}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.content}
       >
-        <ScrollView>
-          <View style={styles.header}>
-            <Text style={styles.title}>Create New Habit</Text>
-            <Text style={styles.subtitle}>
-              Start your journey to better habits with a 3-day streak
-            </Text>
-          </View>
+        <View style={styles.header}>
+          <Text style={styles.title}>Create New Habit</Text>
+          <Text style={styles.subtitle}>
+            Start your journey to better habits with a 3-day streak
+          </Text>
+        </View>
 
-          <View style={styles.form}>
+        <ScrollView 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <Card style={styles.formCard}>
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Habit Title</Text>
               <TextInput
@@ -105,6 +112,7 @@ export default function AddHabitScreen() {
                 maxLength={50}
                 autoCapitalize="words"
                 editable={!isLoading}
+                placeholderTextColor={Colors.text.tertiary}
               />
             </View>
 
@@ -119,54 +127,50 @@ export default function AddHabitScreen() {
                 numberOfLines={3}
                 maxLength={200}
                 editable={!isLoading}
+                placeholderTextColor={Colors.text.tertiary}
               />
             </View>
+          </Card>
 
-            <View style={styles.suggestedSection}>
-              <Text style={styles.suggestedTitle}>Suggested Habits</Text>
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.suggestedContainer}
-              >
-                {SUGGESTED_HABITS.map((habit, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.suggestedHabit}
-                    onPress={() => handleSuggestedHabit(habit)}
-                    disabled={isLoading}
-                  >
-                    <Text style={styles.suggestedHabitTitle}>
-                      {habit.title}
-                    </Text>
-                    <Text style={styles.suggestedHabitDesc}>
-                      {habit.description}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
+          <View style={styles.suggestedSection}>
+            <Text style={styles.suggestedTitle}>Suggested Habits</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.suggestedContainer}
+            >
+              {SUGGESTED_HABITS.map((habit, index) => (
+                <Card
+                  key={index}
+                  variant="outlined"
+                  style={styles.suggestedCard}
+                  onPress={() => handleSuggestedHabit(habit)}
+                >
+                  <Text style={styles.suggestedHabitTitle}>
+                    {habit.title}
+                  </Text>
+                  <Text style={styles.suggestedHabitDesc}>
+                    {habit.description}
+                  </Text>
+                </Card>
+              ))}
+            </ScrollView>
           </View>
         </ScrollView>
 
         <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.button, styles.cancelButton]}
+          <Button
+            title="Cancel"
+            variant="ghost"
             onPress={() => router.back()}
             disabled={isLoading}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, styles.createButton]}
+          />
+          <Button
+            title={isLoading ? 'Creating...' : 'Create Habit'}
             onPress={handleCreate}
             disabled={isLoading}
-          >
-            <Text style={styles.createButtonText}>
-              {isLoading ? 'Creating...' : 'Create Habit'}
-            </Text>
-          </TouchableOpacity>
+            loading={isLoading}
+          />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -176,107 +180,88 @@ export default function AddHabitScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.background.primary,
   },
   content: {
     flex: 1,
   },
   header: {
-    padding: 24,
+    padding: Spacing.lg,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 8,
-    letterSpacing: -0.5,
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.xs,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6B7280',
+    fontSize: Typography.sizes.default,
+    color: Colors.text.secondary,
     lineHeight: 24,
   },
-  form: {
-    padding: 24,
+  scrollContent: {
+    padding: Spacing.lg,
+  },
+  formCard: {
+    marginBottom: Spacing.lg,
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: Spacing.lg,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-    letterSpacing: -0.3,
+    fontSize: Typography.sizes.default,
+    fontWeight: Typography.weights.medium,
+    color: Colors.text.primary,
+    marginBottom: Spacing.xs,
   },
   input: {
-    width: '100%',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: '#1F2937',
-    backgroundColor: '#F9FAFB',
+    borderColor: Colors.gray[200],
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    fontSize: Typography.sizes.default,
+    color: Colors.text.primary,
+    backgroundColor: Colors.background.secondary,
   },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
   },
   suggestedSection: {
-    marginTop: 24,
+    marginBottom: Spacing.lg,
   },
   suggestedTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 16,
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.md,
   },
   suggestedContainer: {
-    paddingRight: 24,
+    paddingBottom: Spacing.sm,
   },
-  suggestedHabit: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    padding: 16,
-    marginRight: 12,
+  suggestedCard: {
     width: 200,
+    marginRight: Spacing.md,
   },
   suggestedHabitTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 4,
+    fontSize: Typography.sizes.default,
+    fontWeight: Typography.weights.semibold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.xs,
   },
   suggestedHabitDesc: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: Typography.sizes.sm,
+    color: Colors.text.secondary,
   },
   footer: {
-    padding: 24,
+    padding: Spacing.lg,
+    paddingBottom: Platform.OS === 'ios' ? Spacing.xl : Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: Colors.gray[100],
+    backgroundColor: Colors.background.primary,
     flexDirection: 'row',
-    gap: 12,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#F3F4F6',
-  },
-  createButton: {
-    backgroundColor: '#4F46E5',
-  },
-  cancelButtonText: {
-    color: '#4B5563',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  createButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
   },
 });

@@ -8,12 +8,16 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  ViewStyle
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/auth';
 import { useHabits } from '../contexts/habit';
 import { authService } from '../services/auth';
+import { Colors, Typography, Spacing, BorderRadius } from '../constants/theme';
+import HabitCard from '../components/HabitCard';
+import Button from '../components/ui/Button';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -29,12 +33,10 @@ export default function DashboardScreen() {
   } = useHabits();
 
   useEffect(() => {
-    console.log('[Dashboard] Current habits:', {
-      total: habits.length,
-      active: activeHabits.length,
-      completed: completedHabits.length
-    });
-  }, [habits, activeHabits, completedHabits]);
+    if (user) {
+      refreshHabits();
+    }
+  }, [user]);
 
   const handleCheckIn = async (habitId: string) => {
     try {
@@ -48,7 +50,7 @@ export default function DashboardScreen() {
           [
             {
               text: 'Complete Habit',
-              style: 'cancel',
+              style: 'destructive',
               onPress: () => handleStreakDecision(habitId, false)
             },
             {
@@ -64,54 +66,59 @@ export default function DashboardScreen() {
     }
   };
 
-  const handleSignOut = async () => {
-    try {
-      const response = await authService.logout();
-      if (response.success) {
-        router.replace('/');
-      } else {
-        Alert.alert('Error', response.error || 'Failed to sign out');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred');
-    }
-  };
-
   const isCheckedInToday = (lastChecked?: number): boolean => {
     if (!lastChecked) return false;
     return new Date(lastChecked).getDate() === new Date().getDate();
   };
 
+  const handleSignOut = async () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await authService.logout();
+              if (response.success) {
+                router.replace('/');
+              } else {
+                Alert.alert('Error', response.error || 'Failed to sign out');
+              }
+            } catch (error) {
+              Alert.alert('Error', 'An unexpected error occurred');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={Colors.background.primary}
+      />
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.title}>Dashboard</Text>
-            <Text style={styles.subtitle}>Welcome back</Text>
-            {user?.email && (
-              <Text style={styles.email}>{user.email}</Text>
+          <View style={styles.headerLeft}>
+            <Text style={styles.title}>My Habits</Text>
+            {activeHabits.length > 0 && (
+              <Text style={styles.subtitle}>
+                {activeHabits.length} active • {completedHabits.length} completed
+              </Text>
             )}
           </View>
           <TouchableOpacity
             style={styles.profileButton}
-            onPress={() => {
-              Alert.alert(
-                'Profile Options',
-                'What would you like to do?',
-                [
-                  {
-                    text: 'Sign Out',
-                    style: 'destructive',
-                    onPress: handleSignOut
-                  },
-                  {
-                    text: 'Cancel',
-                    style: 'cancel'
-                  }
-                ]
-              );
-            }}
+            onPress={handleSignOut}
           >
             <Text style={styles.profileButtonText}>
               {user?.email?.[0]?.toUpperCase() || '👤'}
@@ -122,71 +129,46 @@ export default function DashboardScreen() {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4F46E5" />
+          <ActivityIndicator size="large" color={Colors.primary.default} />
           <Text style={styles.loadingText}>Loading habits...</Text>
         </View>
       ) : (
         <ScrollView 
           style={styles.content}
           contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
         >
           {activeHabits.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>
-                No active habits yet. Start building better habits today!
+                No active habits yet.{'\n'}Start building better habits today!
               </Text>
               <Text style={styles.emptyStateSecondary}>
-                Tap the + button below to get started.
+                Tap the + button below to get started
               </Text>
             </View>
           ) : (
             <>
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Active Habits</Text>
-                {activeHabits.map(habit => {
-                  const checkedInToday = isCheckedInToday(habit.lastChecked);
-                  return (
-                    <View key={habit.id} style={styles.habitCard}>
-                      <View style={styles.habitInfo}>
-                        <Text style={styles.habitTitle}>{habit.title}</Text>
-                        {habit.description && (
-                          <Text style={styles.habitDescription}>
-                            {habit.description}
-                          </Text>
-                        )}
-                        <Text style={styles.streakText}>
-                          Current streak: {habit.currentStreak} days
-                        </Text>
-                      </View>
-                      <TouchableOpacity
-                        style={[
-                          styles.checkButton,
-                          checkedInToday && styles.checkButtonDisabled
-                        ]}
-                        onPress={() => handleCheckIn(habit.id)}
-                        disabled={checkedInToday}
-                      >
-                        <Text style={styles.checkButtonText}>
-                          {checkedInToday ? '✓ Done' : 'Check In'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })}
+                {activeHabits.map(habit => (
+                  <HabitCard
+                    key={habit.id}
+                    habit={habit}
+                    onCheckIn={() => handleCheckIn(habit.id)}
+                    isToday={isCheckedInToday(habit.lastChecked)}
+                  />
+                ))}
               </View>
 
               {completedHabits.length > 0 && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Completed Habits</Text>
+                  <Text style={styles.sectionTitle}>Completed</Text>
                   {completedHabits.map(habit => (
-                    <View key={habit.id} style={[styles.habitCard, styles.completedCard]}>
-                      <View style={styles.habitInfo}>
-                        <Text style={styles.habitTitle}>{habit.title}</Text>
-                        <Text style={styles.completedText}>
-                          {habit.totalStreaks} streaks completed
-                        </Text>
-                      </View>
-                    </View>
+                    <HabitCard
+                      key={habit.id}
+                      habit={habit}
+                    />
                   ))}
                 </View>
               )}
@@ -209,55 +191,57 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.background.primary,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 24,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: Colors.background.primary,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.gray[100],
   },
   headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  headerLeft: {
+    flex: 1,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 8,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#6B7280',
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    color: Colors.text.primary,
     marginBottom: 4,
   },
-  email: {
-    fontSize: 16,
-    color: '#4F46E5',
-    fontWeight: '500',
+  subtitle: {
+    fontSize: Typography.sizes.sm,
+    color: Colors.text.secondary,
   },
   profileButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#4F46E5',
+    backgroundColor: Colors.primary.default,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#4F46E5',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.primary.default,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   profileButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
+    color: Colors.text.inverse,
+    fontSize: Typography.sizes.md,
+    fontWeight: Typography.weights.semibold,
   },
   loadingContainer: {
     flex: 1,
@@ -265,114 +249,69 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#6B7280',
+    marginTop: Spacing.md,
+    fontSize: Typography.sizes.default,
+    color: Colors.text.secondary,
   },
   content: {
     flex: 1,
   },
   contentContainer: {
-    padding: 24,
+    padding: Spacing.lg,
+    paddingBottom: Spacing.xxl + 64, // Extra space for FAB
   },
   emptyState: {
+    flex: 1,
     alignItems: 'center',
-    paddingVertical: 32,
+    justifyContent: 'center',
+    paddingVertical: Spacing.xxl,
   },
   emptyStateText: {
-    fontSize: 16,
-    color: '#6B7280',
+    fontSize: Typography.sizes.md,
+    color: Colors.text.secondary,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: Spacing.md,
+    lineHeight: Typography.sizes.md * 1.5,
   },
   emptyStateSecondary: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: Typography.sizes.default,
+    color: Colors.text.tertiary,
     textAlign: 'center',
   },
   section: {
-    marginBottom: 32,
+    marginBottom: Spacing.xl,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 16,
-  },
-  habitCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  completedCard: {
-    opacity: 0.8,
-  },
-  habitInfo: {
-    flex: 1,
-    marginRight: 12,
-  },
-  habitTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 4,
-  },
-  habitDescription: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 8,
-  },
-  streakText: {
-    fontSize: 14,
-    color: '#4F46E5',
-    fontWeight: '500',
-  },
-  completedText: {
-    fontSize: 14,
-    color: '#059669',
-    fontWeight: '500',
-  },
-  checkButton: {
-    backgroundColor: '#4F46E5',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  checkButtonDisabled: {
-    backgroundColor: '#059669',
-  },
-  checkButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.md,
   },
   fab: {
     position: 'absolute',
-    right: 24,
-    bottom: 40,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#4F46E5',
+    right: Spacing.lg,
+    bottom: Platform.OS === 'ios' ? Spacing.xl : Spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.primary.default,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#4F46E5',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    zIndex: 1000,
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.primary.default,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   fabIcon: {
-    fontSize: 36,
-    color: '#FFFFFF',
-    marginTop: -4,
+    fontSize: 32,
+    color: Colors.text.inverse,
+    marginTop: -2,
   },
 });
