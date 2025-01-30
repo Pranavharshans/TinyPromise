@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Platform,
   Alert,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useHabits } from '../contexts/habit';
@@ -51,33 +52,120 @@ const SUGGESTED_HABITS = [
 
 export default function AddHabitScreen() {
   const router = useRouter();
-  const { createHabit } = useHabits();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const { createHabit, error: contextError, clearError } = useHabits();
+  const [formState, setFormState] = useState({
+    title: '',
+    description: '',
+    isSubmitting: false,
+    error: null as string | null,
+  });
+
+  // Clear context errors when component unmounts
+  useEffect(() => {
+    return () => {
+      clearError();
+    };
+  }, []);
+
+  // Update local error state when context error changes
+  useEffect(() => {
+    if (contextError) {
+      setFormState(prev => ({ ...prev, error: contextError }));
+    }
+  }, [contextError]);
+
+  const validateInput = () => {
+    if (!formState.title.trim()) {
+      setFormState(prev => ({ ...prev, error: 'Please enter a habit title' }));
+      return false;
+    }
+    return true;
+  };
 
   const handleCreate = async () => {
-    if (!title.trim()) {
-      Alert.alert('Error', 'Please enter a habit title');
+    console.log('[AddHabit] Starting habit creation:', {
+      title: formState.title,
+      description: formState.description
+    });
+    
+    if (!validateInput()) {
       return;
     }
 
-    setIsLoading(true);
+    // Set a timeout to clear loading state if operation takes too long
+    const timeout = setTimeout(() => {
+      setFormState(prev => ({
+        ...prev,
+        isSubmitting: false,
+        error: 'Operation timed out. Your habit will be synced when connection is restored.'
+      }));
+    }, 15000);
+
+    setFormState(prev => ({
+      ...prev,
+      isSubmitting: true,
+      error: null
+    }));
+
     try {
-      await createHabit(title.trim(), description.trim() || undefined);
-      console.log('[AddHabit] Habit created successfully');
-      router.push('/dashboard');
+      console.log('[AddHabit] Calling createHabit...');
+      const newHabit = await createHabit(
+        formState.title.trim(),
+        formState.description.trim() || undefined
+      );
+      console.log('[AddHabit] Habit created successfully:', newHabit);
+      
+      // Clear timeout since operation succeeded
+      clearTimeout(timeout);
+
+      setFormState(prev => ({
+        ...prev,
+        isSubmitting: false,
+        error: null
+      }));
+
+      // Show success message before navigation
+      Alert.alert(
+        'Success',
+        'Habit created successfully!',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.push('/dashboard')
+          }
+        ]
+      );
+
     } catch (error) {
       console.error('[AddHabit] Error creating habit:', error);
-      Alert.alert('Error', 'Failed to create habit');
-    } finally {
-      setIsLoading(false);
+      
+      // Clear timeout since we got an error
+      clearTimeout(timeout);
+
+      let errorMessage = 'Failed to create habit';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        // Special handling for timeout errors
+        if (error.message === 'Request timed out') {
+          errorMessage = 'Connection is slow. Your habit will be synced when connection improves.';
+        }
+      }
+
+      setFormState(prev => ({
+        ...prev,
+        error: errorMessage,
+        isSubmitting: false
+      }));
     }
   };
 
   const handleSuggestedHabit = (suggested: typeof SUGGESTED_HABITS[0]) => {
-    setTitle(suggested.title);
-    setDescription(suggested.description);
+    setFormState(prev => ({
+      ...prev,
+      title: suggested.title,
+      description: suggested.description,
+      error: null
+    }));
   };
 
   return (
@@ -100,20 +188,33 @@ export default function AddHabitScreen() {
         <ScrollView 
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
         >
           <Card style={styles.formCard}>
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Habit Title</Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  formState.error && styles.inputError
+                ]}
                 placeholder="Enter habit title"
-                value={title}
-                onChangeText={setTitle}
+                value={formState.title}
+                onChangeText={(text) => {
+                  setFormState(prev => ({
+                    ...prev,
+                    title: text,
+                    error: null
+                  }));
+                }}
                 maxLength={50}
                 autoCapitalize="words"
-                editable={!isLoading}
+                editable={!formState.isSubmitting}
                 placeholderTextColor={Colors.text.tertiary}
               />
+              {formState.error && (
+                <Text style={styles.errorText}>{formState.error}</Text>
+              )}
             </View>
 
             <View style={styles.inputContainer}>
@@ -121,12 +222,17 @@ export default function AddHabitScreen() {
               <TextInput
                 style={[styles.input, styles.textArea]}
                 placeholder="Add a description"
-                value={description}
-                onChangeText={setDescription}
+                value={formState.description}
+                onChangeText={(text) => {
+                  setFormState(prev => ({
+                    ...prev,
+                    description: text
+                  }));
+                }}
                 multiline
                 numberOfLines={3}
                 maxLength={200}
-                editable={!isLoading}
+                editable={!formState.isSubmitting}
                 placeholderTextColor={Colors.text.tertiary}
               />
             </View>
@@ -163,13 +269,13 @@ export default function AddHabitScreen() {
             title="Cancel"
             variant="ghost"
             onPress={() => router.back()}
-            disabled={isLoading}
+            disabled={formState.isSubmitting}
           />
           <Button
-            title={isLoading ? 'Creating...' : 'Create Habit'}
+            title={formState.isSubmitting ? 'Creating...' : 'Create Habit'}
             onPress={handleCreate}
-            disabled={isLoading}
-            loading={isLoading}
+            disabled={formState.isSubmitting}
+            loading={formState.isSubmitting}
           />
         </View>
       </KeyboardAvoidingView>
@@ -223,6 +329,14 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.default,
     color: Colors.text.primary,
     backgroundColor: Colors.background.secondary,
+  },
+  inputError: {
+    borderColor: Colors.danger.default,
+  },
+  errorText: {
+    color: Colors.danger.default,
+    fontSize: Typography.sizes.sm,
+    marginTop: Spacing.xs,
   },
   textArea: {
     height: 100,

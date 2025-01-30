@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { AuthUser, AuthContextType } from '../types/auth';
 
@@ -12,14 +12,26 @@ const AuthContext = createContext<AuthContextType>({
 
 const AUTH_USER_KEY = '@auth_user';
 
-// Custom hook to use auth context
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Effect to handle auth state
+  const persistUser = async (userData: User | null) => {
+    try {
+      if (userData) {
+        await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
+        console.log('[AuthContext] Updated user data in storage');
+      } else {
+        await AsyncStorage.removeItem(AUTH_USER_KEY);
+        console.log('[AuthContext] Cleared user data from storage');
+      }
+    } catch (error) {
+      console.error('[AuthContext] Error persisting user:', error);
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
     let unsubscribe: () => void;
@@ -62,9 +74,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (firebaseUser) {
               // If Firebase has a user, update storage and state
               const userData = firebaseUser as AuthUser;
-              await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
+              await persistUser(userData);
               setUser(userData);
-              console.log('[AuthContext] Updated user data in storage');
             } else {
               // If Firebase has no user but we have stored data, try to restore it
               const storedData = await AsyncStorage.getItem(AUTH_USER_KEY);
@@ -131,7 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, [user, isLoading]);
 
-  const value = {
+  const value: AuthContextType = {
     user,
     isLoading,
     isAuthenticated: !!user,

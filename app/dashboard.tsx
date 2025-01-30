@@ -14,10 +14,8 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/auth';
 import { useHabits } from '../contexts/habit';
-import { authService } from '../services/auth';
 import { Colors, Typography, Spacing, BorderRadius } from '../constants/theme';
 import HabitCard from '../components/HabitCard';
-import Button from '../components/ui/Button';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -28,8 +26,9 @@ export default function DashboardScreen() {
     activeHabits,
     completedHabits,
     updateStreak,
-    handleStreakDecision,
-    refreshHabits 
+    updateHabitStatus,
+    refreshHabits,
+    error 
   } = useHabits();
 
   useEffect(() => {
@@ -37,6 +36,11 @@ export default function DashboardScreen() {
       refreshHabits();
     }
   }, [user]);
+
+  const isCheckedInToday = (lastChecked: number | null): boolean => {
+    if (!lastChecked) return false;
+    return new Date(lastChecked).getDate() === new Date().getDate();
+  };
 
   const handleCheckIn = async (habitId: string) => {
     try {
@@ -51,11 +55,11 @@ export default function DashboardScreen() {
             {
               text: 'Complete Habit',
               style: 'destructive',
-              onPress: () => handleStreakDecision(habitId, false)
+              onPress: () => updateHabitStatus(habitId, false)
             },
             {
               text: 'Keep Going',
-              onPress: () => handleStreakDecision(habitId, true)
+              onPress: () => updateHabitStatus(habitId, true)
             }
           ]
         );
@@ -66,12 +70,7 @@ export default function DashboardScreen() {
     }
   };
 
-  const isCheckedInToday = (lastChecked?: number): boolean => {
-    if (!lastChecked) return false;
-    return new Date(lastChecked).getDate() === new Date().getDate();
-  };
-
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     Alert.alert(
       'Sign Out',
       'Are you sure you want to sign out?',
@@ -83,22 +82,21 @@ export default function DashboardScreen() {
         {
           text: 'Sign Out',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              const response = await authService.logout();
-              if (response.success) {
-                router.replace('/');
-              } else {
-                Alert.alert('Error', response.error || 'Failed to sign out');
-              }
-            } catch (error) {
-              Alert.alert('Error', 'An unexpected error occurred');
-            }
-          }
+          onPress: () => router.push('/')
         }
       ]
     );
   };
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -252,6 +250,17 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     fontSize: Typography.sizes.default,
     color: Colors.text.secondary,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.lg,
+  },
+  errorText: {
+    fontSize: Typography.sizes.default,
+    color: Colors.danger.default,
+    textAlign: 'center',
   },
   content: {
     flex: 1,

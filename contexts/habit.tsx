@@ -1,65 +1,90 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { habitService } from '../services/habit';
 import { useAuth } from './auth';
-import { Habit, HabitProgress } from '../types/habit';
+import { Habit, HabitProgress, HabitError } from '../types/habit';
 
-interface HabitContextType {
+interface HabitContextState {
   habits: Habit[];
   isLoading: boolean;
   activeHabits: Habit[];
   completedHabits: Habit[];
-  createHabit: (title: string, description?: string) => Promise<Habit>;
-  updateStreak: (habitId: string, completed: boolean) => Promise<HabitProgress>;
-  handleStreakDecision: (habitId: string, continue_: boolean) => Promise<void>;
-  refreshHabits: () => Promise<void>;
+  error: string | null;
 }
 
-const HabitContext = createContext<HabitContextType>({
+interface HabitContextType extends HabitContextState {
+  createHabit: (title: string, description?: string) => Promise<Habit>;
+  updateStreak: (habitId: string, completed: boolean) => Promise<HabitProgress>;
+  refreshHabits: () => Promise<void>;
+  updateHabitStatus: (habitId: string, completed: boolean) => Promise<void>;
+  clearError: () => void;
+}
+
+const initialState: HabitContextState = {
   habits: [],
   isLoading: true,
   activeHabits: [],
   completedHabits: [],
+  error: null,
+};
+
+const HabitContext = createContext<HabitContextType>({
+  ...initialState,
   createHabit: async () => { throw new Error('Not implemented'); },
   updateStreak: async () => { throw new Error('Not implemented'); },
-  handleStreakDecision: async () => { throw new Error('Not implemented'); },
-  refreshHabits: async () => { throw new Error('Not implemented'); }
+  refreshHabits: async () => { throw new Error('Not implemented'); },
+  updateHabitStatus: async () => { throw new Error('Not implemented'); },
+  clearError: () => {},
 });
 
 export const useHabits = () => useContext(HabitContext);
 
 export function HabitProvider({ children }: { children: React.ReactNode }) {
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [state, setState] = useState<HabitContextState>(initialState);
   const { user } = useAuth();
 
   // Filter habits by status
-  const activeHabits = habits.filter(h => h.status === 'active');
-  const completedHabits = habits.filter(h => h.status === 'completed');
+  const activeHabits = state.habits.filter(h => h.status === 'active');
+  const completedHabits = state.habits.filter(h => h.status === 'completed');
+
+  const setError = (error: string | null) => {
+    setState(prev => ({ ...prev, error }));
+  };
+
+  const clearError = () => {
+    setError(null);
+  };
 
   // Load user's habits
   const loadHabits = async () => {
     if (!user) {
-      setHabits([]);
-      setIsLoading(false);
+      setState(prev => ({ ...prev, habits: [], isLoading: false }));
       return;
     }
 
     try {
-      console.log('[HabitContext] Loading habits for user:', user.email);
+      console.log('[HabitContext] Loading habits for user:', user.email, user.uid);
       const userHabits = await habitService.getUserHabits(user.uid);
-      setHabits(userHabits);
+      setState(prev => ({
+        ...prev,
+        habits: userHabits,
+        isLoading: false,
+        error: null,
+      }));
       console.log('[HabitContext] Loaded habits:', userHabits.length);
     } catch (error) {
       console.error('[HabitContext] Error loading habits:', error);
-    } finally {
-      setIsLoading(false);
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to load habits',
+      }));
     }
   };
 
   // Load habits when user changes
   useEffect(() => {
     console.log('[HabitContext] User changed, reloading habits...');
-    setIsLoading(true);
+    setState(prev => ({ ...prev, isLoading: true }));
     loadHabits();
   }, [user]);
 
@@ -67,69 +92,96 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
   const createHabit = async (title: string, description?: string): Promise<Habit> => {
     if (!user) throw new Error('User not authenticated');
 
-    console.log('[HabitContext] Creating new habit:', title);
-    const newHabit = await habitService.createHabit(user.uid, title, description);
-    
-    setHabits(current => [newHabit, ...current]);
-    return newHabit;
+    try {
+      console.log('[HabitContext] Creating new habit:', title);
+      const newHabit = await habitService.createHabit(user.uid, title, description);
+      
+      setState(prev => ({
+        ...prev,
+        habits: [newHabit, ...prev.habits],
+        error: null,
+      }));
+
+      return newHabit;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create habit';
+      setError(errorMessage);
+      throw error;
+    }
   };
 
   // Update habit streak
   const updateStreak = async (habitId: string, completed: boolean): Promise<HabitProgress> => {
-    console.log('[HabitContext] Updating streak:', { habitId, completed });
-    const progress = await habitService.updateStreak(habitId, completed);
+    if (!user) throw new Error('User not authenticated');
+    try {
+      console.log('[HabitContext] Updating streak:', { habitId, completed });
+      const progress = await habitService.updateStreak(habitId, completed, user.uid);
 
-    // Update local state
-    setHabits(current => 
-      current.map(habit => 
-        habit.id === habitId
-          ? {
-              ...habit,
-              currentStreak: progress.currentStreak,
-              lastChecked: progress.lastChecked
-            }
-          : habit
-      )
-    );
+      setState(prev => ({
+        ...prev,
+        habits: prev.habits.map(habit =>
+          habit.id === habitId
+            ? {
+                ...habit,
+                currentStreak: progress.currentStreak,
+                lastChecked: progress.lastChecked
+              }
+            : habit
+        ),
+        error: null,
+      }));
 
-    return progress;
+      return progress;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update streak';
+      setError(errorMessage);
+      throw error;
+    }
   };
 
-  // Handle streak decision
-  const handleStreakDecision = async (habitId: string, continue_: boolean): Promise<void> => {
-    console.log('[HabitContext] Processing streak decision:', { habitId, continue_ });
-    await habitService.handleStreakDecision(habitId, continue_);
+  // Update habit status (complete/continue)
+  const updateHabitStatus = async (habitId: string, continue_: boolean): Promise<void> => {
+    if (!user) throw new Error('User not authenticated');
+    try {
+      console.log('[HabitContext] Processing habit status:', { habitId, continue_, userId: user.uid });
+      await habitService.handleStreakDecision(habitId, continue_, user.uid);
 
-    // Update local state
-    setHabits(current =>
-      current.map(habit =>
-        habit.id === habitId
-          ? {
-              ...habit,
-              currentStreak: continue_ ? 0 : habit.currentStreak,
-              status: continue_ ? 'active' : 'completed'
-            }
-          : habit
-      )
-    );
+      setState(prev => ({
+        ...prev,
+        habits: prev.habits.map(habit =>
+          habit.id === habitId
+            ? {
+                ...habit,
+                currentStreak: continue_ ? 0 : habit.currentStreak,
+                status: continue_ ? 'active' : 'completed'
+              }
+            : habit
+        ),
+        error: null,
+      }));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update habit status';
+      setError(errorMessage);
+      throw error;
+    }
   };
 
   // Refresh habits manually
   const refreshHabits = async (): Promise<void> => {
     console.log('[HabitContext] Manually refreshing habits...');
-    setIsLoading(true);
+    setState(prev => ({ ...prev, isLoading: true }));
     await loadHabits();
   };
 
-  const value = {
-    habits,
-    isLoading,
+  const value: HabitContextType = {
+    ...state,
     activeHabits,
     completedHabits,
     createHabit,
     updateStreak,
-    handleStreakDecision,
-    refreshHabits
+    refreshHabits,
+    updateHabitStatus,
+    clearError,
   };
 
   return (

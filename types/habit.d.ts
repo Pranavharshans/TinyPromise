@@ -6,33 +6,40 @@ export interface Streak {
 }
 
 export interface Reminder {
-  id: string;
-  time: string;     // HH:mm format
-  days: number[];   // 0-6 for days of week
+  id?: string;        // Optional for new reminders
+  time: string;       // HH:mm format
+  days: number[];     // 0-6 for days of week
   enabled: boolean;
 }
 
+export interface SyncMetadata {
+  lastSynced: number;
+  version: number;
+  status: 'synced' | 'pending' | 'conflict';
+}
+
 export interface Habit {
+  _sync?: SyncMetadata;
   id: string;
   userId: string;
   title: string;
-  description?: string;
-  createdAt: number;      // timestamp
-  currentStreak: number;  // current streak days (0-3)
-  totalStreaks: number;   // total number of completed 3-day streaks
-  lastChecked?: number;   // timestamp of last check-in
+  description: string;         // Empty string if no description
+  createdAt: number;          // timestamp
+  currentStreak: number;      // current streak days (0-3)
+  totalStreaks: number;       // total number of completed 3-day streaks
+  lastChecked: number | null; // timestamp of last check-in, null for new habits
   streakHistory: Streak[];
   reminders: Reminder[];
-  badges: string[];       // achievement IDs
+  badges: string[];           // achievement IDs
   status: 'active' | 'completed' | 'abandoned';
 }
 
 export interface HabitProgress {
   habitId: string;
   currentStreak: number;
-  lastChecked?: number;
+  lastChecked: number | null;
   todayCompleted: boolean;
-  streakEndsAt?: number;  // timestamp when current streak ends
+  streakEndsAt?: number;      // timestamp when current streak ends
 }
 
 export interface HabitSuggestion {
@@ -44,4 +51,19 @@ export interface HabitSuggestion {
     time: string;
     days: number[];
   }[];
+}
+
+// Error types
+export type HabitServiceError = 
+  | 'permission-denied'
+  | 'not-found'
+  | 'already-exists'
+  | 'resource-exhausted'
+  | 'failed-precondition'
+  | 'unavailable'
+  | 'unknown';
+
+export interface HabitError extends Error {
+  code: HabitServiceError;
+  originalError?: unknown;
 }

@@ -1,6 +1,6 @@
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, FirebaseApp, FirebaseError } from "firebase/app";
+import { getAuth, Auth } from "firebase/auth";
+import { getFirestore, Firestore } from "firebase/firestore";
 import {
   FIREBASE_API_KEY,
   FIREBASE_AUTH_DOMAIN,
@@ -23,15 +23,33 @@ const firebaseConfig = {
   measurementId: FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
 
-// Initialize Auth
-const auth = getAuth(app);
+try {
+  // Initialize Firebase
+  app = initializeApp(firebaseConfig);
+  
+  // Initialize Auth
+  auth = getAuth(app);
 
-// Initialize Firestore
-const db = getFirestore(app);
+  // Initialize Firestore
+  db = getFirestore(app);
 
-console.log('[Firebase] Firebase initialized with Firestore');
+  console.log('[Firebase] Firebase initialized with Firestore');
+} catch (error) {
+  const firebaseError = error as FirebaseError;
+  
+  if (firebaseError.code === 'auth/already-initialized') {
+    console.log('[Firebase] Auth already initialized, using existing instance');
+    app = initializeApp(firebaseConfig);
+    auth = getAuth();
+    db = getFirestore(app);
+  } else {
+    console.error('[Firebase] Initialization error:', error);
+    throw error;
+  }
+}
 
 export { app, auth, db };
