@@ -149,12 +149,13 @@ export default function DashboardScreen() {
             <>
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Active Habits</Text>
-                {activeHabits.map(habit => (
+                {activeHabits.map((habit, index) => (
                   <HabitCard
                     key={habit.id}
                     habit={habit}
                     onCheckIn={() => handleCheckIn(habit.id)}
                     isToday={isCheckedInToday(habit.lastChecked)}
+                    index={index}
                   />
                 ))}
               </View>
@@ -162,10 +163,11 @@ export default function DashboardScreen() {
               {completedHabits.length > 0 && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Completed</Text>
-                  {completedHabits.map(habit => (
+                  {completedHabits.map((habit, index) => (
                     <HabitCard
                       key={habit.id}
                       habit={habit}
+                      index={index + activeHabits.length}
                     />
                   ))}
                 </View>

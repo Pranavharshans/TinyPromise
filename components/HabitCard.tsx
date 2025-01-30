@@ -18,6 +18,7 @@ interface HabitCardProps {
   onCheckIn?: () => void;
   style?: StyleProp<ViewStyle>;
   isToday?: boolean;
+  index?: number;
 }
 
 export default function HabitCard({
@@ -25,7 +26,12 @@ export default function HabitCard({
   onCheckIn,
   style,
   isToday = false,
+  index = 0,
 }: HabitCardProps) {
+  const getCardColor = (idx: number) => {
+    const colors = [Colors.habit.orange, Colors.habit.yellow, Colors.habit.teal];
+    return colors[idx % colors.length];
+  };
   const getStreakColor = (streak: number) => {
     if (streak === 0) return Colors.gray[400];
     if (streak === 3) return Colors.success.default;
@@ -39,7 +45,11 @@ export default function HabitCard({
   return (
     <Card
       variant="elevated"
-      style={[styles.container, style]}
+      style={[
+        styles.container,
+        { backgroundColor: getCardColor(index) },
+        style
+      ]}
       contentStyle={styles.cardContent}
     >
       <View style={styles.header}>
@@ -116,12 +126,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Typography.sizes.md,
     fontWeight: Typography.weights.semibold,
-    color: Colors.text.primary,
+    color: Colors.gray[800],
     marginBottom: 4,
   },
   description: {
     fontSize: Typography.sizes.sm,
-    color: Colors.text.secondary,
+    color: Colors.gray[600],
   },
   streakContainer: {
     marginTop: Spacing.sm,
@@ -134,7 +144,7 @@ const styles = StyleSheet.create({
   },
   streakLabel: {
     fontSize: Typography.sizes.sm,
-    color: Colors.text.secondary,
+    color: Colors.gray[700],
   },
   streakRow: {
     flexDirection: 'row',
@@ -143,10 +153,11 @@ const styles = StyleSheet.create({
   streakCount: {
     fontSize: Typography.sizes.md,
     fontWeight: Typography.weights.bold,
+    color: Colors.gray[900],
   },
   streakDays: {
     fontSize: Typography.sizes.sm,
-    color: Colors.text.tertiary,
+    color: Colors.gray[600],
   },
   progress: {
     marginTop: Spacing.xs,

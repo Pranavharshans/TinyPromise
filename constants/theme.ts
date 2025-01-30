@@ -6,6 +6,11 @@ export const Colors = {
     default: '#4F46E5', // Indigo-600
     dark: '#4338CA', // Indigo-700
   },
+  habit: {
+    orange: '#FE8810',
+    yellow: '#F4D06E',
+    teal: '#9EDAD2',
+  },
   success: {
     light: '#34D399', // Emerald-400
     default: '#059669', // Emerald-600
