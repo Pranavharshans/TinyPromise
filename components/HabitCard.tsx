@@ -6,9 +6,9 @@ import {
   ViewStyle,
   StyleProp,
   TouchableOpacity,
+  Pressable,
   Vibration,
 } from 'react-native';
-import { PanGestureHandler } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -55,17 +55,6 @@ const HabitCard = ({
 
   const SWIPE_THRESHOLD = 100;
 
-  const handleGestureEvent = () => {};
-
-  const handleGestureStateChange = ({ nativeEvent }: { nativeEvent: { state: number } }) => {
-    if (nativeEvent.state === 1) {
-      longPressTimeout.current = setTimeout(handleLongPress, 500);
-    } else if (nativeEvent.state === 5) {
-      if (longPressTimeout.current) {
-        clearTimeout(longPressTimeout.current);
-      }
-    }
-  };
 
   const handleCheckIn = () => {
     scale.value = withSequence(
@@ -199,11 +188,8 @@ const HabitCard = ({
   })() : null;
 
   return (
-    <PanGestureHandler
-      onGestureEvent={handleGestureEvent}
-      onHandlerStateChange={handleGestureStateChange}
-    >
-      <Animated.View>
+    <Pressable onLongPress={handleLongPress}>
+      <Animated.View style={animatedStyle}>
         <Card
           variant="elevated"
           style={[
@@ -303,7 +289,7 @@ const HabitCard = ({
           }}
         />
       </Animated.View>
-    </PanGestureHandler>
+    </Pressable>
   );
 };
 
