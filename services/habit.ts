@@ -83,7 +83,9 @@ export const habitService = {
         reminders: [...reminders],
         badges: [] as string[],
         status: 'active' as const,
-        lastChecked: null
+        lastChecked: null,
+        category: 'other',
+        order: Date.now() // Use timestamp as initial order
       };
 
       // Create locally first for immediate feedback
@@ -454,6 +456,37 @@ export const habitService = {
     } catch (error) {
       if (error instanceof FirestoreError || error instanceof FirebaseError) {
         handleFirestoreError(error, 'Update reminders');
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * Update habit order
+   */
+  async updateHabitOrder(habitId: string, newOrder: number, userId: string): Promise<void> {
+    try {
+      console.log('[HabitService] Updating habit order:', { habitId, newOrder });
+      
+      if (!habitId) throw new Error('Habit ID is required');
+      if (!userId) throw new Error('User ID is required');
+
+      // Get current habit
+      const storedHabits = await habitStorage.getHabits(userId);
+      const habit = storedHabits.find(h => h.id === habitId);
+      
+      if (habit) {
+        // Update local first
+        const updatedHabit = { ...habit, order: newOrder };
+        await habitStorage.updateHabit(userId, updatedHabit);
+      }
+      
+      // Then update Firebase
+      await updateDoc(doc(db, HABITS_COLLECTION, habitId), { order: newOrder });
+      console.log('[HabitService] Habit order updated');
+    } catch (error) {
+      if (error instanceof FirestoreError || error instanceof FirebaseError) {
+        handleFirestoreError(error, 'Update habit order');
       }
       throw error;
     }

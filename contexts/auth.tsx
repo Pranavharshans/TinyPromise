@@ -39,75 +39,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initializeAuth = async () => {
       console.log('[AuthContext] Starting auth initialization...');
       try {
-        // First try to get stored user
-        const storedUser = await AsyncStorage.getItem(AUTH_USER_KEY);
-        console.log('[AuthContext] Stored user data:', storedUser ? 'exists' : 'none');
-
-        if (storedUser && mounted) {
-          try {
-            const userData = JSON.parse(storedUser) as AuthUser;
-            console.log('[AuthContext] Successfully parsed stored user:', userData.email);
-
-            // Check if the token is still valid
-            const now = Date.now();
-            if (userData.stsTokenManager?.expirationTime && userData.stsTokenManager.expirationTime > now) {
-              console.log('[AuthContext] Found valid token, setting user state');
-              setUser(userData);
-            } else {
-              console.log('[AuthContext] Token expired, clearing storage');
-              await AsyncStorage.removeItem(AUTH_USER_KEY);
-            }
-          } catch (parseError) {
-            console.error('[AuthContext] Error parsing stored user:', parseError);
-            await AsyncStorage.removeItem(AUTH_USER_KEY);
-          }
-        }
-
-        // Set up Firebase auth listener
-        console.log('[AuthContext] Setting up Firebase auth state listener...');
+        // Set up Firebase auth listener first
         unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
           if (!mounted) return;
 
           console.log('[AuthContext] Auth state changed. User:', firebaseUser?.email);
           
-          try {
-            if (firebaseUser) {
-              // If Firebase has a user, update storage and state
-              const userData = firebaseUser as AuthUser;
-              await persistUser(userData);
-              setUser(userData);
-            } else {
-              // If Firebase has no user but we have stored data, try to restore it
-              const storedData = await AsyncStorage.getItem(AUTH_USER_KEY);
-              if (storedData) {
-                const parsedUser = JSON.parse(storedData) as AuthUser;
-                const now = Date.now();
-                if (parsedUser.stsTokenManager?.expirationTime && parsedUser.stsTokenManager.expirationTime > now) {
-                  console.log('[AuthContext] Restoring user from storage');
-                  setUser(parsedUser);
-                } else {
-                  console.log('[AuthContext] Stored token expired, clearing data');
-                  await AsyncStorage.removeItem(AUTH_USER_KEY);
-                  setUser(null);
-                }
-              } else {
-                console.log('[AuthContext] No stored user data, setting null');
-                setUser(null);
-              }
-            }
-          } catch (error) {
-            console.error('[AuthContext] Error handling auth state change:', error);
+          if (firebaseUser) {
+            // If Firebase has a user, update storage and state
+            const userData = firebaseUser as AuthUser;
+            await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
+            console.log('[AuthContext] User data stored in AsyncStorage');
+            setUser(userData);
+          } else {
+            // Clear storage and state when user is null
             await AsyncStorage.removeItem(AUTH_USER_KEY);
+            console.log('[AuthContext] User data cleared from AsyncStorage');
             setUser(null);
-          } finally {
-            if (mounted) {
-              setIsLoading(false);
-            }
+          }
+          
+          if (mounted) {
+            setIsLoading(false);
           }
         });
+
+        // Try to get stored user while waiting for Firebase
+        const storedUser = await AsyncStorage.getItem(AUTH_USER_KEY);
+        if (storedUser && mounted) {
+          const userData = JSON.parse(storedUser) as AuthUser;
+          console.log('[AuthContext] Restored user from storage:', userData.email);
+          setUser(userData);
+        }
       } catch (error) {
         console.error('[AuthContext] Auth initialization error:', error);
+        // Clear any potentially corrupted data
+        await AsyncStorage.removeItem(AUTH_USER_KEY);
         if (mounted) {
+          setUser(null);
           setIsLoading(false);
         }
       }

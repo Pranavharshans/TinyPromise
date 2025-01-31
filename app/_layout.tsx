@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '../contexts/auth';
 import { HabitProvider } from '../contexts/habit';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -103,10 +104,12 @@ function RootLayoutNav() {
 export default function RootLayout() {
   console.log('[Navigation] Initializing root layout...');
   return (
-    <AuthProvider>
-      <HabitProvider>
-        <RootLayoutNav />
-      </HabitProvider>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <HabitProvider>
+          <RootLayoutNav />
+        </HabitProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -18,12 +18,15 @@ export interface SyncMetadata {
   status: 'synced' | 'pending' | 'conflict';
 }
 
+import { CategoryIconType } from '../components/CategoryIcon';
+
 export interface Habit {
   _sync?: SyncMetadata;
   id: string;
   userId: string;
   title: string;
   description: string;         // Empty string if no description
+  category: CategoryIconType;  // Habit category for icon and grouping
   createdAt: number;          // timestamp
   currentStreak: number;      // current streak days (0-3)
   totalStreaks: number;       // total number of completed 3-day streaks
@@ -32,6 +35,7 @@ export interface Habit {
   reminders: Reminder[];
   badges: string[];           // achievement IDs
   status: 'active' | 'completed' | 'abandoned';
+  order: number;             // position in the list, used for custom ordering
 }
 
 export interface HabitProgress {

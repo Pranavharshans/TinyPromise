@@ -10,25 +10,34 @@ import {
   Alert,
   StatusBar,
   Platform,
+  FlatList,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/auth';
 import { useHabits } from '../contexts/habit';
+import { Habit } from '../types/habit';
 import { Colors, Typography, Spacing, BorderRadius } from '../constants/theme';
 import HabitCard from '../components/HabitCard';
+import DraggableHabitList from '../components/DraggableHabitList';
+
+// Constants for list layout
+const CARD_HEIGHT = 80;
+const CARD_MARGIN = Spacing.md;
+const ITEM_HEIGHT = CARD_HEIGHT + CARD_MARGIN;
 
 export default function DashboardScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { 
-    habits, 
-    isLoading, 
+  const {
+    habits,
+    isLoading,
     activeHabits,
     completedHabits,
     updateStreak,
     updateHabitStatus,
     refreshHabits,
-    error 
+    reorderHabits,
+    error
   } = useHabits();
 
   useEffect(() => {
@@ -125,57 +134,55 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary.default} />
-          <Text style={styles.loadingText}>Loading habits...</Text>
-        </View>
-      ) : (
-        <ScrollView 
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {activeHabits.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>
-                No active habits yet.{'\n'}Start building better habits today!
-              </Text>
-              <Text style={styles.emptyStateSecondary}>
-                Tap the + button below to get started
-              </Text>
-            </View>
-          ) : (
-            <>
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Active Habits</Text>
-                {activeHabits.map((habit, index) => (
-                  <HabitCard
-                    key={habit.id}
-                    habit={habit}
-                    onCheckIn={() => handleCheckIn(habit.id)}
-                    isToday={isCheckedInToday(habit.lastChecked)}
-                    index={index}
-                  />
-                ))}
+      <View style={{ flex: 1 }}>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.primary.default} />
+            <Text style={styles.loadingText}>Loading habits...</Text>
+          </View>
+        ) : activeHabits.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>
+              No active habits yet.{'\n'}Start building better habits today!
+            </Text>
+            <Text style={styles.emptyStateSecondary}>
+              Tap the + button below to get started
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={activeHabits}
+            renderItem={({ item: habit, index }: { item: Habit; index: number }) => (
+              <HabitCard
+                habit={habit}
+                onCheckIn={() => handleCheckIn(habit.id)}
+                index={index}
+              />
+            )}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.habitList}
+            ListHeaderComponent={() => (
+              <Text style={styles.sectionTitle}>Active Habits</Text>
+            )}
+            ListFooterComponent={() => (
+              <View>
+                {completedHabits.length > 0 && (
+                  <View style={styles.completedSection}>
+                    <Text style={styles.sectionTitle}>Completed</Text>
+                    {completedHabits.map((habit, index) => (
+                      <HabitCard
+                        key={habit.id}
+                        habit={habit}
+                        index={index + activeHabits.length}
+                      />
+                    ))}
+                  </View>
+                )}
               </View>
-
-              {completedHabits.length > 0 && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Completed</Text>
-                  {completedHabits.map((habit, index) => (
-                    <HabitCard
-                      key={habit.id}
-                      habit={habit}
-                      index={index + activeHabits.length}
-                    />
-                  ))}
-                </View>
-              )}
-            </>
-          )}
-        </ScrollView>
-      )}
+            )}
+          />
+        )}
+      </View>
 
       {/* Floating Action Button */}
       <TouchableOpacity
@@ -189,9 +196,16 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
+  habitList: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xxl + 64, // Extra space for FAB
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background.primary,
+  },
+  completedSection: {
+    marginTop: Spacing.xl,
   },
   header: {
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
@@ -263,13 +277,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.default,
     color: Colors.danger.default,
     textAlign: 'center',
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: Spacing.lg,
-    paddingBottom: Spacing.xxl + 64, // Extra space for FAB
   },
   emptyState: {
     flex: 1,

@@ -1,5 +1,7 @@
 import { initializeApp, FirebaseApp, FirebaseError } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { getFirestore, Firestore } from "firebase/firestore";
 import {
   FIREBASE_API_KEY,
@@ -37,7 +39,7 @@ try {
   // Initialize Firestore
   db = getFirestore(app);
 
-  console.log('[Firebase] Firebase initialized with Firestore');
+  console.log('[Firebase] Firebase initialized successfully');
 } catch (error) {
   const firebaseError = error as FirebaseError;
   

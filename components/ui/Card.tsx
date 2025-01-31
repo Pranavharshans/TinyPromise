@@ -7,6 +7,7 @@ import {
   PressableProps,
   StyleProp,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, BorderRadius, Shadows } from '../../constants/theme';
 
 interface CardProps extends Omit<PressableProps, 'style'> {
@@ -14,6 +15,10 @@ interface CardProps extends Omit<PressableProps, 'style'> {
   style?: StyleProp<ViewStyle>;
   variant?: 'default' | 'elevated' | 'outlined';
   contentStyle?: StyleProp<ViewStyle>;
+  gradientColors?: string[];
+  gradientStart?: { x: number; y: number };
+  gradientEnd?: { x: number; y: number };
+  shadowColor?: string;
 }
 
 export default function Card({
@@ -22,6 +27,10 @@ export default function Card({
   variant = 'default',
   contentStyle,
   onPress,
+  gradientColors,
+  gradientStart = { x: 0, y: 0 },
+  gradientEnd = { x: 1, y: 1 },
+  shadowColor,
   ...pressableProps
 }: CardProps) {
   const getCardStyle = () => {
@@ -29,6 +38,9 @@ export default function Card({
     
     if (variant === 'elevated') {
       baseStyles.push(styles.elevated);
+      if (shadowColor) {
+        baseStyles.push({ shadowColor });
+      }
     } else if (variant === 'outlined') {
       baseStyles.push(styles.outlined);
     }
@@ -41,9 +53,20 @@ export default function Card({
   };
 
   const content = (
-    <View style={[styles.content, contentStyle]}>
-      {children}
-    </View>
+    <View style={[styles.content, contentStyle]}>{children}</View>
+  );
+
+  const cardBackground = gradientColors ? (
+    <LinearGradient
+      colors={gradientColors}
+      start={gradientStart}
+      end={gradientEnd}
+      style={getCardStyle()}
+    >
+      {content}
+    </LinearGradient>
+  ) : (
+    <View style={getCardStyle()}>{content}</View>
   );
 
   if (onPress) {
@@ -56,16 +79,12 @@ export default function Card({
         onPress={onPress}
         {...pressableProps}
       >
-        {content}
+        {cardBackground}
       </Pressable>
     );
   }
 
-  return (
-    <View style={getCardStyle()}>
-      {content}
-    </View>
-  );
+  return cardBackground;
 }
 
 const styles = StyleSheet.create({
@@ -75,8 +94,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   elevated: {
-    ...Shadows.default,
     backgroundColor: Colors.background.primary,
+    shadowColor: Colors.background.primary,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
   outlined: {
     borderWidth: 1,

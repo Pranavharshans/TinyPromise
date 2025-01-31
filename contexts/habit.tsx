@@ -16,6 +16,7 @@ interface HabitContextType extends HabitContextState {
   updateStreak: (habitId: string, completed: boolean) => Promise<HabitProgress>;
   refreshHabits: () => Promise<void>;
   updateHabitStatus: (habitId: string, completed: boolean) => Promise<void>;
+  reorderHabits: (fromIndex: number, toIndex: number) => Promise<void>;
   clearError: () => void;
 }
 
@@ -33,6 +34,7 @@ const HabitContext = createContext<HabitContextType>({
   updateStreak: async () => { throw new Error('Not implemented'); },
   refreshHabits: async () => { throw new Error('Not implemented'); },
   updateHabitStatus: async () => { throw new Error('Not implemented'); },
+  reorderHabits: async () => { throw new Error('Not implemented'); },
   clearError: () => {},
 });
 
@@ -173,6 +175,40 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     await loadHabits();
   };
 
+  const reorderHabits = async (fromIndex: number, toIndex: number): Promise<void> => {
+    if (!user) throw new Error('User not authenticated');
+    
+    try {
+      const habitToMove = state.habits[fromIndex];
+      const newHabits = [...state.habits];
+      newHabits.splice(fromIndex, 1);
+      newHabits.splice(toIndex, 0, habitToMove);
+
+      // Update all affected habits' order
+      const updatedHabits = newHabits.map((habit, index) => ({
+        ...habit,
+        order: index
+      }));
+
+      // Update state immediately for smooth UI
+      setState(prev => ({
+        ...prev,
+        habits: updatedHabits
+      }));
+
+      // Update each habit's order in Firebase
+      await Promise.all(
+        updatedHabits.map(habit =>
+          habitService.updateHabitOrder(habit.id, habit.order, user.uid)
+        )
+      );
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to reorder habits';
+      setError(errorMessage);
+      throw error;
+    }
+  };
+
   const value: HabitContextType = {
     ...state,
     activeHabits,
@@ -181,6 +217,7 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     updateStreak,
     refreshHabits,
     updateHabitStatus,
+    reorderHabits,
     clearError,
   };
 

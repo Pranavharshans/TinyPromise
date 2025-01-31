@@ -7,10 +7,7 @@ import {
   AuthError
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthUser } from '../types/auth';
-
-const AUTH_USER_KEY = '@auth_user';
 
 export interface AuthResponse {
   success: boolean;
@@ -29,10 +26,7 @@ export const authService = {
       // Send verification email
       if (userCredential.user) {
         await sendEmailVerification(userCredential.user);
-        // Store user data in AsyncStorage
-        const userData = userCredential.user as AuthUser;
-        await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
-        console.log('[AuthService] User registered and stored:', email);
+        console.log('[AuthService] Verification email sent to:', email);
       }
 
       return {
@@ -42,8 +36,6 @@ export const authService = {
       };
     } catch (error) {
       console.error('[AuthService] Registration error:', error);
-      // Clear any stored data on error
-      await AsyncStorage.removeItem(AUTH_USER_KEY);
       const authError = error as AuthError;
       return {
         success: false,
@@ -58,20 +50,13 @@ export const authService = {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Store user data regardless of verification status
-      if (userCredential.user) {
-        const userData = userCredential.user as AuthUser;
-        await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
-        console.log('[AuthService] User logged in and stored:', email);
-        
-        if (!userData.emailVerified) {
-          console.log('[AuthService] User needs verification:', email);
-          return {
-            success: true,
-            user: userCredential,
-            needsVerification: true
-          };
-        }
+      if (userCredential.user && !userCredential.user.emailVerified) {
+        console.log('[AuthService] User needs verification:', email);
+        return {
+          success: true,
+          user: userCredential,
+          needsVerification: true
+        };
       }
 
       return {
@@ -81,8 +66,6 @@ export const authService = {
       };
     } catch (error) {
       console.error('[AuthService] Login error:', error);
-      // Clear any stored data on error
-      await AsyncStorage.removeItem(AUTH_USER_KEY);
       const authError = error as AuthError;
       return {
         success: false,
@@ -95,45 +78,18 @@ export const authService = {
   async logout(): Promise<AuthResponse> {
     console.log('[AuthService] Attempting to logout user');
     try {
-      // Clear AsyncStorage first to prevent any race conditions
-      await AsyncStorage.removeItem(AUTH_USER_KEY);
-      // Then sign out from Firebase
       await signOut(auth);
-      console.log('[AuthService] User logged out and storage cleared');
+      console.log('[AuthService] User logged out');
       return {
         success: true
       };
     } catch (error) {
       console.error('[AuthService] Logout error:', error);
-      // Ensure storage is cleared even if Firebase signOut fails
-      await AsyncStorage.removeItem(AUTH_USER_KEY);
       const authError = error as AuthError;
       return {
         success: false,
         error: this.getErrorMessage(authError.code)
       };
-    }
-  },
-
-  // Get current stored auth data
-  async getStoredAuth(): Promise<AuthUser | null> {
-    try {
-      const storedUser = await AsyncStorage.getItem(AUTH_USER_KEY);
-      if (storedUser) {
-        const userData = JSON.parse(storedUser) as AuthUser;
-        // Check if token is still valid
-        const now = Date.now();
-        if (userData.stsTokenManager?.expirationTime && userData.stsTokenManager.expirationTime > now) {
-          return userData;
-        }
-        // Token expired, clean up
-        await AsyncStorage.removeItem(AUTH_USER_KEY);
-      }
-      return null;
-    } catch (error) {
-      console.error('[AuthService] Error getting stored auth:', error);
-      await AsyncStorage.removeItem(AUTH_USER_KEY);
-      return null;
     }
   },
 
