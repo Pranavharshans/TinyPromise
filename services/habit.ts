@@ -12,7 +12,15 @@ import {
 } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { db } from '../config/firebase';
-import { Habit, HabitProgress, CreateHabitInput, UpdateHabitInput } from '../types/habit';
+import {
+  Habit,
+  HabitProgress,
+  CreateHabitInput,
+  UpdateHabitInput,
+  HabitStats,
+  OverallStats,
+  HabitStreak
+} from '../types/habit';
 import { habitStorage } from './storage/habits';
 import { notificationService } from './notifications';
 
@@ -64,6 +72,75 @@ const handleFirestoreError = (error: FirestoreError | FirebaseError, operation: 
     default:
       throw new Error(`Firebase error: ${error.message}`);
   }
+};
+
+// Helper function to calculate completion rate
+const calculateCompletionRate = (streakHistory: HabitStreak[], startDate: string): number => {
+  const start = new Date(startDate).getTime();
+  const now = Date.now();
+  const totalDays = Math.ceil((now - start) / (1000 * 60 * 60 * 24));
+  
+  if (totalDays === 0) return 0;
+  
+  const completedDays = streakHistory.reduce((acc, streak) => {
+    const streakStart = new Date(streak.startDate).getTime();
+    const streakEnd = new Date(streak.endDate).getTime();
+    return acc + Math.ceil((streakEnd - streakStart) / (1000 * 60 * 60 * 24));
+  }, 0);
+  
+  return (completedDays / totalDays) * 100;
+};
+
+// Calculate individual habit statistics
+const calculateHabitStats = (habit: Habit): HabitStats => {
+  const longestStreak = Math.max(
+    habit.currentStreak,
+    ...habit.streakHistory.map(streak => {
+      const start = new Date(streak.startDate).getTime();
+      const end = new Date(streak.endDate).getTime();
+      return Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    })
+  );
+
+  return {
+    completionRate: calculateCompletionRate(habit.streakHistory, habit.createdAt),
+    longestStreak,
+    currentStreak: habit.currentStreak,
+    totalCompletions: habit.streakHistory.length * 3, // Each streak is 3 days
+    startDate: habit.createdAt,
+    lastCompletedDate: habit.lastChecked || habit.createdAt
+  };
+};
+
+// Calculate overall statistics across all habits
+const calculateOverallStats = (habits: Habit[]): OverallStats => {
+  const activeHabits = habits.filter(h => h.status === 'active');
+  const completedHabits = habits.filter(h => h.status === 'completed');
+  
+  const totalStreaks = habits.reduce((acc, h) => acc + h.totalStreaks, 0);
+  const averageStreak = habits.length ? totalStreaks / habits.length : 0;
+  
+  const habitStats = habits.map(h => ({
+    habit: h,
+    stats: calculateHabitStats(h)
+  }));
+  
+  const topPerforming = habitStats.reduce((top, current) => {
+    if (!top || current.stats.completionRate > top.stats.completionRate) {
+      return current;
+    }
+    return top;
+  }, null as { habit: Habit; stats: HabitStats } | null);
+
+  return {
+    totalHabits: habits.length,
+    activeHabits: activeHabits.length,
+    completedHabits: completedHabits.length,
+    overallCompletionRate: habits.length ?
+      habitStats.reduce((acc, h) => acc + h.stats.completionRate, 0) / habits.length : 0,
+    averageStreak,
+    topPerformingHabit: topPerforming?.habit.title || ''
+  };
 };
 
 export const habitService = {
@@ -586,5 +663,19 @@ export const habitService = {
     });
 
     return Array.from(merged.values());
+  },
+
+  /**
+   * Get statistics for a single habit
+   */
+  getHabitStats(habit: Habit): HabitStats {
+    return calculateHabitStats(habit);
+  },
+
+  /**
+   * Get statistics for all habits
+   */
+  getOverallStats(habits: Habit[]): OverallStats {
+    return calculateOverallStats(habits);
   }
 };
