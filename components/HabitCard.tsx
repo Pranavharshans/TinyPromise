@@ -57,6 +57,7 @@ const HabitCard = ({
 
 
   const handleCheckIn = () => {
+    console.log('Check In button pressed');
     scale.value = withSequence(
       withTiming(0.95, { duration: 100 }),
       withTiming(1, { duration: 100 })
@@ -64,7 +65,9 @@ const HabitCard = ({
     
     success.value = withTiming(1, { duration: 300 }, (finished) => {
       if (finished) {
+        console.log('Animation finished');
         if (onCheckIn) {
+          console.log('Calling onCheckIn');
           runOnJS(onCheckIn)();
         }
         success.value = withTiming(0, { duration: 300 });
