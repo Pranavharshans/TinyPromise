@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { authService } from '../services/auth';
 import { AuthUser, AuthContextType } from '../types/auth';
 
 const AuthContext = createContext<AuthContextType>({
@@ -52,7 +53,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log('[AuthContext] User data stored in AsyncStorage');
             setUser(userData);
           } else {
-            // Clear storage and state when user is null
+            // Try to auto-login with stored credentials when Firebase user is null
+            try {
+              const storedCredentials = await AsyncStorage.getItem('@user_credentials');
+              if (storedCredentials) {
+                const { email, password } = JSON.parse(storedCredentials);
+                console.log('[AuthContext] Found stored credentials, attempting auto-login');
+                const { success, user: userCredential } = await authService.login(email, password);
+                
+                if (success && userCredential?.user) {
+                  console.log('[AuthContext] Auto-login successful');
+                  // login() will handle storing credentials again
+                  return; // Exit early as auth state will change and trigger this listener again
+                } else {
+                  console.log('[AuthContext] Auto-login failed, clearing stored credentials');
+                  await AsyncStorage.removeItem('@user_credentials');
+                }
+              }
+            } catch (error) {
+              console.error('[AuthContext] Auto-login error:', error);
+              await AsyncStorage.removeItem('@user_credentials');
+            }
+            
+            // Clear storage and state when user is null and auto-login failed
             await AsyncStorage.removeItem(AUTH_USER_KEY);
             console.log('[AuthContext] User data cleared from AsyncStorage');
             setUser(null);

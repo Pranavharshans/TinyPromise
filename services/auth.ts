@@ -1,10 +1,11 @@
-import { 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   sendEmailVerification,
   UserCredential,
-  AuthError
+  AuthError,
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { AuthUser } from '../types/auth';
@@ -49,27 +50,34 @@ export const authService = {
     console.log('[AuthService] Attempting to login user:', email);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
+
       if (userCredential.user && !userCredential.user.emailVerified) {
         console.log('[AuthService] User needs verification:', email);
         return {
           success: true,
           user: userCredential,
-          needsVerification: true
+          needsVerification: true,
         };
       }
+
+      // Store user credentials in AsyncStorage upon successful login
+      await AsyncStorage.setItem(
+        '@user_credentials',
+        JSON.stringify({ email, password })
+      );
+      console.log('[AuthService] User credentials stored in AsyncStorage');
 
       return {
         success: true,
         user: userCredential,
-        needsVerification: false
+        needsVerification: false,
       };
     } catch (error) {
       console.error('[AuthService] Login error:', error);
       const authError = error as AuthError;
       return {
         success: false,
-        error: this.getErrorMessage(authError.code)
+        error: this.getErrorMessage(authError.code),
       };
     }
   },
@@ -80,15 +88,20 @@ export const authService = {
     try {
       await signOut(auth);
       console.log('[AuthService] User logged out');
+
+      // Clear user credentials from AsyncStorage upon logout
+      await AsyncStorage.removeItem('@user_credentials');
+      console.log('[AuthService] User credentials cleared from AsyncStorage');
+
       return {
-        success: true
+        success: true,
       };
     } catch (error) {
       console.error('[AuthService] Logout error:', error);
       const authError = error as AuthError;
       return {
         success: false,
-        error: this.getErrorMessage(authError.code)
+        error: this.getErrorMessage(authError.code),
       };
     }
   },
