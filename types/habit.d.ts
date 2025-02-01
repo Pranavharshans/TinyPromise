@@ -1,73 +1,66 @@
-export interface Streak {
-  startDate: number;  // timestamp
-  endDate: number;    // timestamp
-  completed: boolean;
-  continued: boolean; // whether user chose to continue after 3 days
-}
-
-export interface Reminder {
-  id?: string;        // Optional for new reminders
-  time: string;       // HH:mm format
-  days: number[];     // 0-6 for days of week
-  enabled: boolean;
-}
-
-export interface SyncMetadata {
-  lastSynced: number;
-  version: number;
-  status: 'synced' | 'pending' | 'conflict';
-}
-
 import { CategoryIconType } from '../components/CategoryIcon';
 
+export interface HabitStreak {
+  startDate: string;
+  endDate: string;
+}
+
+export interface HabitReminder {
+  enabled: boolean;
+  time: string; // 24-hour format "HH:mm"
+  notificationId?: string;
+}
+
+export interface HabitSync {
+  status: 'pending' | 'synced' | 'conflict';
+  lastSynced: number;
+  version: number;
+  error?: string;
+}
+
 export interface Habit {
-  _sync?: SyncMetadata;
   id: string;
   userId: string;
   title: string;
-  description: string;         // Empty string if no description
-  category: CategoryIconType;  // Habit category for icon and grouping
-  createdAt: number;          // timestamp
-  currentStreak: number;      // current streak days (0-3)
-  totalStreaks: number;       // total number of completed 3-day streaks
-  lastChecked: number | null; // timestamp of last check-in, null for new habits
-  streakHistory: Streak[];
-  reminders: Reminder[];
-  badges: string[];           // achievement IDs
-  status: 'active' | 'completed' | 'abandoned';
-  order: number;             // position in the list, used for custom ordering
+  description?: string;
+  currentStreak: number;
+  totalStreaks: number;
+  status: 'active' | 'completed';
+  createdAt: string;
+  lastChecked?: string;
+  order: number;
+  category: CategoryIconType;
+  reminder: HabitReminder;
+  streakHistory: HabitStreak[];
+  _sync?: HabitSync;
 }
 
 export interface HabitProgress {
   habitId: string;
   currentStreak: number;
-  lastChecked: number | null;
+  lastChecked: string;
   todayCompleted: boolean;
-  streakEndsAt?: number;      // timestamp when current streak ends
+  streakEndsAt: number;
 }
 
-export interface HabitSuggestion {
-  id: string;
+export interface HabitError {
+  code: string;
+  message: string;
+}
+
+export interface CreateHabitInput {
   title: string;
-  description: string;
-  category: string;
-  defaultReminders?: {
+  description?: string;
+  category: CategoryIconType;
+  reminder?: {
+    enabled: boolean;
     time: string;
-    days: number[];
-  }[];
+  };
 }
 
-// Error types
-export type HabitServiceError = 
-  | 'permission-denied'
-  | 'not-found'
-  | 'already-exists'
-  | 'resource-exhausted'
-  | 'failed-precondition'
-  | 'unavailable'
-  | 'unknown';
-
-export interface HabitError extends Error {
-  code: HabitServiceError;
-  originalError?: unknown;
+export interface UpdateHabitInput {
+  title?: string;
+  description?: string;
+  category?: CategoryIconType;
+  reminder?: Partial<HabitReminder>;
 }

@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '../contexts/auth';
 import { HabitProvider } from '../contexts/habit';
+import { NotificationsProvider } from '../contexts/notifications';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Prevent the splash screen from auto-hiding
@@ -106,9 +107,11 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
-        <HabitProvider>
-          <RootLayoutNav />
-        </HabitProvider>
+        <NotificationsProvider>
+          <HabitProvider>
+            <RootLayoutNav />
+          </HabitProvider>
+        </NotificationsProvider>
       </AuthProvider>
     </GestureHandlerRootView>
   );
