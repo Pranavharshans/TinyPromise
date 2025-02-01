@@ -26,6 +26,7 @@ import HabitActionMenu from './HabitActionMenu';
 import SyncIndicator from './SyncIndicator';
 import CategoryIcon from './CategoryIcon';
 import { Habit } from '../types/habit';
+import HabitCalendar from './HabitCalendar';
 import { Colors, Typography, Spacing, BorderRadius } from '../constants/theme';
 
 interface HabitCardProps {
@@ -258,9 +259,8 @@ const HabitCard = ({
                 <Text style={styles.streakDays}> / 3 days</Text>
               </View>
             </View>
-            <MiniCalendar
-              dates={getCheckInDates()}
-              currentStreak={habit.currentStreak}
+            <HabitCalendar
+              habit={habit}
             />
             <Progress
               progress={getProgress(habit.currentStreak)}
