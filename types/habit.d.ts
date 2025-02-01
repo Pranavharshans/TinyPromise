@@ -64,3 +64,21 @@ export interface UpdateHabitInput {
   category?: CategoryIconType;
   reminder?: Partial<HabitReminder>;
 }
+
+export interface HabitStats {
+  completionRate: number;
+  longestStreak: number;
+  currentStreak: number;
+  totalCompletions: number;
+  startDate: string;
+  lastCompletedDate: string;
+}
+
+export interface OverallStats {
+  totalHabits: number;
+  activeHabits: number;
+  completedHabits: number;
+  overallCompletionRate: number;
+  averageStreak: number;
+  topPerformingHabit: string;
+}
