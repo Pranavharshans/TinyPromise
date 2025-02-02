@@ -262,6 +262,7 @@ const styles = StyleSheet.create<Styles>({
   container: {
     backgroundColor: '#FFFFFF',
     overflow: 'hidden',
+    borderRadius: 12,
   },
   weekStripContainer: {
     borderBottomWidth: 1,
@@ -348,6 +349,7 @@ const styles = StyleSheet.create<Styles>({
     flex: 1,
     opacity: 1,
     backgroundColor: '#FFFFFF',
+    borderRadius: 12,
   },
   hidden: {
     height: 0,
