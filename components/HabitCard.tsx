@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   },
   completedBadge: {
     marginTop: Spacing.md,
-    backgroundColor: Colors.success.light + '20',
+    backgroundColor: Colors.habitState.paused.light + '20',
     paddingVertical: Spacing.xs,
     paddingHorizontal: Spacing.sm,
     borderRadius: BorderRadius.full,
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   },
   completedText: {
     fontSize: Typography.sizes.sm,
-    color: Colors.success.default,
+    color: Colors.habitState.paused.default,
     fontWeight: Typography.weights.medium,
   },
   countdown: {

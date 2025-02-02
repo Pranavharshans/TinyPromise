@@ -1,8 +1,15 @@
 # TinyPromise Implementation Log
 
-Last Updated: 2/2/2025, 12:57:12 PM
+Last Updated: 2/2/2025, 2:19:53 PM
 
 ## Implemented Features
+
+### Update Color Scheme for Paused Habits
+- Date: 2/2/2025, 2:19:53 PM
+- Description: Changed the color scheme for paused habits from green to blue:
+  - Added new habitState.paused colors in theme with light, default, and dark blue variants
+  - Updated HabitCard component to use blue colors for paused habit badges
+  - Improved visual distinction between completed and paused states
 
 ### Add Delete Habit Functionality
 - Date: 2/2/2025, 12:57:12 PM

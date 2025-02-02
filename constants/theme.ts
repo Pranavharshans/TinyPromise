@@ -11,6 +11,13 @@ export const Colors = {
     yellow: '#F4D06E',
     teal: '#9EDAD2',
   },
+  habitState: {
+    paused: {
+      light: '#60A5FA', // Blue-400
+      default: '#3B82F6', // Blue-500
+      dark: '#2563EB', // Blue-600
+    }
+  },
   success: {
     light: '#34D399', // Emerald-400
     default: '#059669', // Emerald-600
