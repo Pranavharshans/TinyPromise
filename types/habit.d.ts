@@ -1,8 +1,14 @@
 import { CategoryIconType } from '../components/CategoryIcon';
 
+export interface StreakFreeze {
+  date: string;
+  used: boolean;
+}
+
 export interface HabitStreak {
   startDate: string;
   endDate: string;
+  completed: boolean;
 }
 
 export interface HabitReminder {
@@ -29,9 +35,9 @@ export interface Habit {
   createdAt: string;
   lastChecked?: string;
   order: number;
-  category: CategoryIconType;
   reminder: HabitReminder;
   streakHistory: HabitStreak[];
+  streakFreezes: StreakFreeze[];
   _sync?: HabitSync;
 }
 
@@ -51,7 +57,6 @@ export interface HabitError {
 export interface CreateHabitInput {
   title: string;
   description?: string;
-  category: CategoryIconType;
   reminder?: {
     enabled: boolean;
     time: string;
@@ -61,7 +66,6 @@ export interface CreateHabitInput {
 export interface UpdateHabitInput {
   title?: string;
   description?: string;
-  category?: CategoryIconType;
   reminder?: Partial<HabitReminder>;
 }
 

@@ -24,7 +24,6 @@ import Progress from './ui/Progress';
 import MiniCalendar from './MiniCalendar';
 import HabitActionMenu from './HabitActionMenu';
 import SyncIndicator from './SyncIndicator';
-import CategoryIcon from './CategoryIcon';
 import { Habit } from '../types/habit';
 import HabitCalendar from './HabitCalendar';
 import { Colors, Typography, Spacing, BorderRadius } from '../constants/theme';
@@ -215,7 +214,6 @@ const HabitCard = ({
           <View style={styles.header}>
             <View style={styles.titleContainer}>
               <View style={styles.titleRow}>
-                <CategoryIcon category={habit.category} size="sm" />
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={[styles.title, { marginLeft: Spacing.xs }]}>{habit.title}</Text>
                   {timeRemaining && (

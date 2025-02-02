@@ -166,13 +166,13 @@ export const habitService = {
         currentStreak: 0,
         totalStreaks: 0,
         streakHistory: [],
+        streakFreezes: [],
         reminder: {
           enabled: input.reminder?.enabled ?? false,
           time: input.reminder?.time ?? "09:00"
         },
         status: 'active' as const,
         lastChecked: undefined,
-        category: input.category || 'other',
         order: Date.now()
       };
 
@@ -407,14 +407,16 @@ export const habitService = {
         if (currentStreak === 3) {
           streakHistory.push({
             startDate: new Date(now - (2 * 24 * 60 * 60 * 1000)).toISOString(),
-            endDate: new Date(now).toISOString()
+            endDate: new Date(now).toISOString(),
+            completed: true
           });
         }
       } else {
         if (currentStreak > 0) {
           streakHistory.push({
             startDate: new Date(now - (currentStreak * 24 * 60 * 60 * 1000)).toISOString(),
-            endDate: new Date(now).toISOString()
+            endDate: new Date(now).toISOString(),
+            completed: false
           });
         }
         currentStreak = 0;
