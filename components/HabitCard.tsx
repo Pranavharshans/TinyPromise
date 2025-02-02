@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useHabits } from '../contexts/habit';
+import { habitService } from '../services/habit';
 import {
   View,
   Text,
@@ -44,7 +45,7 @@ const HabitCard = ({
   isToday = false,
   index = 0,
 }: HabitCardProps) => {
-  const { deleteHabit } = useHabits();
+  const { deleteHabit, updateHabitStatus } = useHabits();
   const [menuVisible, setMenuVisible] = useState(false);
   const scale = useSharedValue(1);
   const success = useSharedValue(0);
@@ -116,81 +117,17 @@ const HabitCard = ({
     return shadowColors[idx % shadowColors.length];
   };
 
-  const getStreakColor = (streak: number) => {
-    if (streak === 0) return Colors.gray[400];
-    if (streak === 3) return Colors.success.default;
+  const getStreakColor = (habit: Habit) => {
+    if (habit.status === 'completed') return Colors.habitState.paused.default;
+    if (habit.currentStreak === 0) return Colors.gray[400];
+    if (habit.currentStreak === 3) return Colors.success.default;
     return Colors.primary.default;
   };
 
-  const getProgress = (streak: number) => {
-    return Math.min(streak / 3, 1);
+  const getProgress = (habit: Habit) => {
+    if (habit.status === 'completed') return 0;
+    return Math.min(habit.currentStreak / 3, 1);
   };
-
-  const getCheckInDates = () => {
-    const dates: Date[] = [];
-    const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime());
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
-    if (habit.lastChecked) {
-      const lastChecked = new Date(habit.lastChecked);
-      if (lastChecked >= sevenDaysAgo) {
-        dates.push(new Date(lastChecked.getTime()));
-      }
-    }
-
-    const checkedDates = habit.streakHistory.reduce<Date[]>((acc, streak) => {
-      const start = new Date(streak.startDate);
-      const end = new Date(streak.endDate);
-      if (end >= sevenDaysAgo) {
-        for (
-          let current = new Date(start.getTime());
-          current <= end;
-          current = new Date(current.getTime() + 86400000)
-        ) {
-          acc.push(new Date(current.getTime()));
-        }
-      }
-      return acc;
-    }, []);
-
-    return [...dates, ...checkedDates];
-  };
-
-  const nextCheckInTime = (() => {
-    if (habit.status === 'completed') return null;
-    
-    const now = new Date();
-    const lastChecked = habit.lastChecked ? new Date(habit.lastChecked) : null;
-    
-    if (!lastChecked) {
-      const nextCheckIn = new Date();
-      nextCheckIn.setHours(24, 0, 0, 0);
-      return nextCheckIn;
-    }
-    
-    const nextCheckIn = new Date(lastChecked);
-    nextCheckIn.setDate(nextCheckIn.getDate() + 1);
-    nextCheckIn.setHours(0, 0, 0, 0);
-    
-    if (nextCheckIn <= now) {
-      nextCheckIn.setDate(now.getDate() + 1);
-    }
-    
-    return nextCheckIn;
-  })();
-
-  const timeRemaining = nextCheckInTime ? (() => {
-    const now = new Date();
-    const diff = nextCheckInTime.getTime() - now.getTime();
-    
-    if (diff <= 0) return null;
-    
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
-    return `${hours}h ${minutes}m`;
-  })() : null;
 
   return (
     <Pressable onLongPress={handleLongPress}>
@@ -199,7 +136,8 @@ const HabitCard = ({
           variant="elevated"
           style={[
             styles.container,
-            style
+            style,
+            habit.status === 'completed' && { backgroundColor: Colors.habitState.paused.light + '33' }
           ]}
           contentStyle={styles.cardContent}
           gradientColors={getGradientColors(index)}
@@ -215,16 +153,7 @@ const HabitCard = ({
           </Animated.View>
           <View style={styles.header}>
             <View style={styles.titleContainer}>
-              <View style={styles.titleRow}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={[styles.title, { marginLeft: Spacing.xs }]}>{habit.title}</Text>
-                  {timeRemaining && (
-                    <Text style={[styles.countdown, { marginLeft: Spacing.xs }]}>
-                      {timeRemaining}
-                    </Text>
-                  )}
-                </View>
-              </View>
+              <Text style={styles.title}>{habit.title}</Text>
               {habit.description && (
                 <Text style={styles.description} numberOfLines={2}>
                   {habit.description}
@@ -251,7 +180,7 @@ const HabitCard = ({
                 <Text
                   style={[
                     styles.streakCount,
-                    { color: getStreakColor(habit.currentStreak) }
+                    { color: getStreakColor(habit) }
                   ]}
                 >
                   {habit.currentStreak}
@@ -263,9 +192,9 @@ const HabitCard = ({
               habit={habit}
             />
             <Progress
-              progress={getProgress(habit.currentStreak)}
+              progress={getProgress(habit)}
               height={6}
-              color={getStreakColor(habit.currentStreak)}
+              color={getStreakColor(habit)}
               style={{ ...styles.progress, marginTop: Spacing.sm }}
             />
           </View>
@@ -292,8 +221,13 @@ const HabitCard = ({
               console.error('Failed to delete habit:', error);
             }
           }}
-          onPause={() => {
-            console.log('Pause habit:', habit.id);
+          onPause={async () => {
+            try {
+              await updateHabitStatus(habit.id, false);
+              console.log('Habit paused successfully:', habit.id);
+            } catch (error) {
+              console.error('Failed to pause habit:', error);
+            }
           }}
         />
       </Animated.View>
