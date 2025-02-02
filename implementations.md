@@ -1,8 +1,14 @@
 # TinyPromise Implementation Log
 
-Last Updated: 2/2/2025, 2:19:53 PM
+Last Updated: 2/2/2025, 2:30:48 PM
 
 ## Implemented Features
+
+### Fix Habit Creation Error
+- Date: 2/2/2025, 2:30:48 PM
+- Description: Fixed bug preventing habit creation due to Firebase error:
+  - Removed `lastChecked: undefined` from habit creation data
+  - Field will be added only when a habit is first checked
 
 ### Update Color Scheme for Paused Habits
 - Date: 2/2/2025, 2:19:53 PM

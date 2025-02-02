@@ -173,7 +173,6 @@ export const habitService = {
           time: input.reminder?.time ?? "09:00"
         },
         status: 'active' as const,
-        lastChecked: undefined,
         order: Date.now()
       };
 
