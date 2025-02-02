@@ -118,6 +118,20 @@ export const habitStorage = {
   },
 
   /**
+   * Delete a single habit
+   */
+  async deleteHabit(userId: string, habitId: string): Promise<void> {
+    try {
+      const habits = await this.getHabits(userId);
+      const filteredHabits = habits.filter(h => h.id !== habitId);
+      await this.saveHabits(userId, filteredHabits);
+    } catch (error) {
+      console.error('[HabitStorage] Error deleting habit:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Clear all storage (for logout)
    */
   async clearStorage(userId: string): Promise<void> {

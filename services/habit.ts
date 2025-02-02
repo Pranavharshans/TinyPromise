@@ -5,6 +5,7 @@ import {
   getDoc,
   getDocs,
   updateDoc,
+  deleteDoc,
   query,
   where,
   orderBy,
@@ -665,6 +666,44 @@ export const habitService = {
     });
 
     return Array.from(merged.values());
+  },
+
+  /**
+   * Delete a habit
+   */
+  async deleteHabit(habitId: string, userId: string): Promise<void> {
+    try {
+      console.log('[HabitService] Deleting habit:', habitId);
+      
+      if (!habitId) throw new Error('Habit ID is required');
+      if (!userId) throw new Error('User ID is required');
+
+      // Get habit to check if it exists and has a notification
+      const storedHabits = await habitStorage.getHabits(userId);
+      const habit = storedHabits.find(h => h.id === habitId);
+      
+      if (!habit) {
+        throw new Error('Habit not found');
+      }
+
+      // Cancel any existing notifications
+      if (habit.reminder?.notificationId) {
+        await notificationService.cancelHabitReminder(habitId);
+      }
+
+      // Delete from local storage
+      await habitStorage.deleteHabit(userId, habitId);
+
+      // Delete from Firebase
+      await deleteDoc(doc(db, HABITS_COLLECTION, habitId));
+      
+      console.log('[HabitService] Habit deleted successfully');
+    } catch (error) {
+      if (error instanceof FirestoreError || error instanceof FirebaseError) {
+        handleFirestoreError(error, 'Delete habit');
+      }
+      throw error;
+    }
   },
 
   /**

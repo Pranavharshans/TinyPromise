@@ -17,6 +17,7 @@ interface HabitContextType extends HabitContextState {
   refreshHabits: () => Promise<void>;
   updateHabitStatus: (habitId: string, completed: boolean) => Promise<void>;
   reorderHabits: (fromIndex: number, toIndex: number) => Promise<void>;
+  deleteHabit: (habitId: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -27,7 +28,6 @@ const initialState: HabitContextState = {
   completedHabits: [],
   error: null,
 };
-
 const HabitContext = createContext<HabitContextType>({
   ...initialState,
   createHabit: async () => { throw new Error('Not implemented'); },
@@ -35,6 +35,7 @@ const HabitContext = createContext<HabitContextType>({
   refreshHabits: async () => { throw new Error('Not implemented'); },
   updateHabitStatus: async () => { throw new Error('Not implemented'); },
   reorderHabits: async () => { throw new Error('Not implemented'); },
+  deleteHabit: async () => { throw new Error('Not implemented'); },
   clearError: () => {},
 });
 
@@ -96,7 +97,7 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
 
     try {
       console.log('[HabitContext] Creating new habit:', title);
-      const newHabit = await habitService.createHabit(user.uid, title, description);
+      const newHabit = await habitService.createHabit(user.uid, { title, description });
       
       setState(prev => ({
         ...prev,
@@ -209,6 +210,25 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Delete habit
+  const deleteHabit = async (habitId: string): Promise<void> => {
+    if (!user) throw new Error('User not authenticated');
+    try {
+      console.log('[HabitContext] Deleting habit:', habitId);
+      await habitService.deleteHabit(habitId, user.uid);
+
+      setState(prev => ({
+        ...prev,
+        habits: prev.habits.filter(h => h.id !== habitId),
+        error: null,
+      }));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete habit';
+      setError(errorMessage);
+      throw error;
+    }
+  };
+
   const value: HabitContextType = {
     ...state,
     activeHabits,
@@ -218,6 +238,7 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     refreshHabits,
     updateHabitStatus,
     reorderHabits,
+    deleteHabit,
     clearError,
   };
 

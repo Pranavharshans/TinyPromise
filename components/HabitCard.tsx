@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useHabits } from '../contexts/habit';
 import {
   View,
   Text,
@@ -43,6 +44,7 @@ const HabitCard = ({
   isToday = false,
   index = 0,
 }: HabitCardProps) => {
+  const { deleteHabit } = useHabits();
   const [menuVisible, setMenuVisible] = useState(false);
   const scale = useSharedValue(1);
   const success = useSharedValue(0);
@@ -282,8 +284,13 @@ const HabitCard = ({
           onEdit={() => {
             console.log('Edit habit:', habit.id);
           }}
-          onDelete={() => {
-            console.log('Delete habit:', habit.id);
+          onDelete={async () => {
+            try {
+              await deleteHabit(habit.id);
+              console.log('Habit deleted successfully:', habit.id);
+            } catch (error) {
+              console.error('Failed to delete habit:', error);
+            }
           }}
           onPause={() => {
             console.log('Pause habit:', habit.id);

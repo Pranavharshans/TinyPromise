@@ -1,8 +1,16 @@
 # TinyPromise Implementation Log
 
-Last Updated: 2/2/2025, 10:49:26 AM
+Last Updated: 2/2/2025, 12:57:12 PM
 
 ## Implemented Features
+
+### Add Delete Habit Functionality
+- Date: 2/2/2025, 12:57:12 PM
+- Description: Implemented complete habit deletion functionality including:
+  - Added deleteHabit method to habitService for Firebase deletion
+  - Added deleteHabit method to habitStorage for local storage deletion
+  - Added delete functionality to habit context
+  - Proper cleanup of notifications when deleting habits
 
 ### Remove Category Field from Habit Type
 - Date: 2/2/2025, 10:49:26 AM
