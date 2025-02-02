@@ -58,7 +58,6 @@ const HabitCard = ({
 
   const SWIPE_THRESHOLD = 100;
 
-
   const handleCheckIn = () => {
     console.log('Check In button pressed');
     scale.value = withSequence(
@@ -224,7 +223,7 @@ const HabitCard = ({
           }}
           onPause={async () => {
             try {
-              await updateHabitStatus(habit.id, false);
+              await updateHabitStatus(habit.id, 'paused');
               console.log('Habit paused successfully:', habit.id);
             } catch (error) {
               console.error('Failed to pause habit:', error);
@@ -232,7 +231,7 @@ const HabitCard = ({
           }}
           onResume={async () => {
             try {
-              await updateHabitStatus(habit.id, true);
+              await updateHabitStatus(habit.id, 'active');
               console.log('Habit resumed successfully:', habit.id);
             } catch (error) {
               console.error('Failed to resume habit:', error);

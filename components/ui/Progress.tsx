@@ -1,117 +1,56 @@
 import React from 'react';
-import {
-  View,
-  StyleSheet,
-  ViewStyle,
-  Animated,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-} from 'react-native';
-import { Colors, BorderRadius } from '../../constants/theme';
-
-// Enable LayoutAnimation for Android
-if (Platform.OS === 'android') {
-  if (UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-  }
-}
+import { View, StyleSheet, ViewStyle } from 'react-native';
+import { useThemeColor } from '../../hooks/useThemeColor';
 
 interface ProgressProps {
-  progress: number; // 0 to 1
+  progress: number; // percentage (0-100)
   height?: number;
   color?: string;
-  backgroundColor?: string;
   style?: ViewStyle;
-  animated?: boolean;
-  roundness?: 'none' | 'sm' | 'md' | 'full';
 }
 
-export default function Progress({
-  progress,
-  height = 8,
-  color = Colors.primary.default,
-  backgroundColor = Colors.gray[200],
-  style,
-  animated = true,
-  roundness = 'full',
-}: ProgressProps) {
-  const [width, setWidth] = React.useState(0);
-  const animatedWidth = React.useRef(new Animated.Value(0)).current;
+const Progress: React.FC<ProgressProps> = ({ 
+  progress, 
+  height = 4, 
+  color,
+  style 
+}) => {
+  const backgroundColor = useThemeColor({}, 'background');
+  const defaultTintColor = useThemeColor({}, 'tint');
+  const tintColor = color || defaultTintColor;
 
-  React.useEffect(() => {
-    if (animated) {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    }
-  }, [progress, animated]);
-
-  const getBorderRadius = () => {
-    switch (roundness) {
-      case 'none':
-        return 0;
-      case 'sm':
-        return BorderRadius.sm;
-      case 'md':
-        return BorderRadius.md;
-      case 'full':
-        return height;
-    }
-  };
-
-  const borderRadius = getBorderRadius();
-
-  const progressWidth = Math.max(0, Math.min(1, progress)) * width;
-
-  const containerStyle = [
-    styles.container,
-    {
-      height,
-      backgroundColor,
-      borderRadius,
-    },
-    style,
-  ];
-
-  const progressStyle = [
-    styles.progress,
-    {
-      width: progressWidth,
-      backgroundColor: color,
-      borderRadius,
-    },
-  ];
+  const clampedProgress = Math.min(Math.max(progress, 0), 100);
 
   return (
-    <View
-      style={containerStyle}
-      onLayout={({ nativeEvent }) => {
-        setWidth(nativeEvent.layout.width);
-      }}
-    >
-      <View style={progressStyle}>
-        <View style={styles.shine} />
-      </View>
+    <View style={[
+      styles.container, 
+      { backgroundColor, height }, 
+      style
+    ]}>
+      <View 
+        style={[
+          styles.progressBar, 
+          { 
+            backgroundColor: tintColor,
+            width: `${clampedProgress}%` 
+          }
+        ]} 
+      />
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
+    borderRadius: 2,
     overflow: 'hidden',
   },
-  progress: {
+  progressBar: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
   },
-  shine: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '50%',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
 });
+
+export default Progress;

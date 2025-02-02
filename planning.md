@@ -68,3 +68,37 @@ TinyPromise is a habit-building app centered on 3-day streaks. It targets indivi
 
 ## Required Development Resources
 - React Native expertise, Firebase setup, QA testing devices.
+
+## Gamification and Statistics
+
+### Gamification
+
+*   **Badges:**
+    *   **First Streak Completed:** Awarded when a user completes their first 3-day streak for any habit.
+    *   **Triple Threat:** Awarded when a user completes 3 streaks (can be for different habits).
+    *   **Consistency Champion (levels 1-3):** Awarded for completing 5, 10, and 20 streaks respectively.
+    *   **Habit Hacker:** Awarded for creating 5 habits.
+    *   **Resilient Streak:** Awarded for resuming a paused habit and completing a streak.
+*   **Achievements/Rewards Screen:**
+    *   Display earned badges with clear descriptions of how they were obtained.
+    *   Show locked badges with hints on how to unlock them (e.g., "Complete 10 streaks to unlock").
+    *   Consider adding a progress bar towards unlocking the next badge.
+*   **Motivational Messages:**
+    *   Display a congratulatory message when a user completes a streak (e.g., "You're on fire! Streak completed!").
+    *   Provide encouraging messages when a user resumes a paused habit (e.g., "Welcome back! Let's get this streak going again.").
+
+### Statistics
+
+*   **Habit Statistics:**
+    *   **Current Streak:** Display the current streak length for each habit.
+    *   **Longest Streak:** Show the longest streak ever achieved for each habit.
+    *   **Completion Rate:** Calculate and display the percentage of successful streaks for each habit (e.g., "Completed 7 out of 10 streaks").
+    *   **Total Streaks Completed:** Show the total number of 3-day streaks completed for each habit.
+*   **Overall Statistics:**
+    *   **Total Streaks Completed (All Habits):** Display the total number of 3-day streaks completed across all habits.
+    *   **Average Streak Length:** Calculate and display the average streak length across all habits.
+    *   **Most Successful Habit:** Highlight the habit with the highest completion rate or longest streak.
+*   **Visualizations:**
+    *   **Streak Calendar:** Use a calendar view to show daily progress for each habit, highlighting completed streaks.
+    *   **Progress Charts:** Use bar charts or line graphs to visualize streak completion rates, longest streaks, or other relevant metrics over time.
+    *   **Overall Progress:** Display a summary of the user's overall progress, such as the total number of streaks completed or the percentage of habits with active streaks.

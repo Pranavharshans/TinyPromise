@@ -12,7 +12,7 @@ import { Colors, Typography, Spacing, BorderRadius } from '../constants/theme';
 
 interface HabitActionMenuProps {
   visible: boolean;
-  habitStatus: 'active' | 'completed';
+  habitStatus: 'active' | 'paused' | 'completed';
   onClose: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -59,6 +59,17 @@ export default function HabitActionMenu({
     </TouchableOpacity>
   );
 
+  const renderStatusAction = () => {
+    switch (habitStatus) {
+      case 'active':
+        return renderAction('Pause Habit', onPause);
+      case 'paused':
+        return renderAction('Resume Habit', onResume, Colors.primary.default);
+      case 'completed':
+        return null;
+    }
+  };
+
   return (
     <Modal
       transparent
@@ -88,9 +99,7 @@ export default function HabitActionMenu({
           ]}
         >
           {renderAction('Edit Habit', onEdit)}
-          {habitStatus === 'active'
-            ? renderAction('Pause Habit', onPause)
-            : renderAction('Resume Habit', onResume, Colors.primary.default)}
+          {renderStatusAction()}
           {renderAction('Delete Habit', onDelete, Colors.danger.default)}
         </Animated.View>
       </TouchableOpacity>
