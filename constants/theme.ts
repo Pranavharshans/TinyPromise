@@ -42,12 +42,14 @@ export const Colors = {
     primary: '#FFFFFF',
     secondary: '#F9FAFB',
     tertiary: '#F3F4F6',
+    calendar: '#e9e3ff', // Light purple
   },
   text: {
     primary: '#1F2937',
     secondary: '#4B5563',
     tertiary: '#6B7280',
     inverse: '#FFFFFF',
+    calendar: '#7c69db', // Light purple
   },
 };
 

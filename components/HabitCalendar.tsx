@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView, ViewStyle, TextStyle } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, AntDesign, Entypo } from '@expo/vector-icons';
 import { Habit } from '../types/habit';
-import { Colors, Spacing } from '../constants/theme';
+import { Colors, Spacing, Typography } from '../constants/theme';
 
 interface HabitCalendarProps {
   habit: Habit;
@@ -22,6 +22,7 @@ interface Styles {
   dayText: TextStyle;
   todayDay: ViewStyle;
   todayText: TextStyle;
+  completedDay: ViewStyle;
   completedText: TextStyle;
   missedText: TextStyle;
   activeText: TextStyle;
@@ -31,6 +32,9 @@ interface Styles {
   calendarDay: ViewStyle;
   weekStripContainer: ViewStyle;
   weekStripContent: ViewStyle;
+  streakIcon: ViewStyle;
+  stackContainer: ViewStyle;
+  iconContainer: ViewStyle;
 }
 
 const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
@@ -50,42 +54,33 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
 
   const getMarkedDates = () => {
     const markedDates: Record<string, any> = {};
-    
+
     // Process streak history
     habit.streakHistory.forEach(streak => {
       const startDate = new Date(streak.startDate);
       const endDate = new Date(streak.endDate);
+      
+      // Mark the range of dates
       let currentDate = new Date(startDate);
-
       while (currentDate <= endDate) {
         const dateString = currentDate.toISOString().split('T')[0];
         markedDates[dateString] = {
-          type: streak.completed ? 'completed' : 'active',
-          backgroundColor: streak.completed ? `${Colors.success.default}20` : `${Colors.primary.default}20`
+          type: streak.completed ? 'completed' : 'missed',
+          marked: true
         };
         currentDate.setDate(currentDate.getDate() + 1);
       }
     });
 
-    // Add missed days
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const lastChecked = habit.lastChecked ? new Date(habit.lastChecked) : null;
-
-    if (lastChecked) {
-      const daysSinceLastCheck = Math.floor((now.getTime() - lastChecked.getTime()) / (1000 * 60 * 60 * 24));
-      if (daysSinceLastCheck > 1 && daysSinceLastCheck <= 3) {
-        const missedDate = new Date(lastChecked);
-        missedDate.setDate(missedDate.getDate() + 1);
-        
-        while (missedDate < now) {
-          const dateString = missedDate.toISOString().split('T')[0];
-          markedDates[dateString] = {
-            type: 'missed',
-            backgroundColor: `${Colors.danger.default}20`
-          };
-          missedDate.setDate(missedDate.getDate() + 1);
-        }
+    // If there's a lastChecked date and it's not already marked, mark it too
+    if (habit.lastChecked && typeof habit.lastChecked === 'string') {
+      const lastCheckedDate = new Date(habit.lastChecked);
+      const lastCheckedString = lastCheckedDate.toISOString().split('T')[0];
+      if (!markedDates[lastCheckedString]) {
+        markedDates[lastCheckedString] = {
+          type: 'completed',
+          marked: true
+        };
       }
     }
 
@@ -117,26 +112,39 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
       const markedDates = getMarkedDates();
       const marking = markedDates[dateString];
 
+      const isCompleted = marking?.type === 'completed';
       const dayStyle = [
         styles.weekDay,
-        marking && { backgroundColor: marking.backgroundColor },
+        isCompleted && styles.completedDay,
         isToday && styles.todayDay
       ];
 
       const textStyle = [
         styles.dayText,
         isToday && styles.todayText,
-        marking?.type === 'completed' && styles.completedText,
-        marking?.type === 'missed' && styles.missedText,
-        marking?.type === 'active' && styles.activeText
+        isCompleted && styles.completedText
       ];
+
+      console.log('Rendering date:', dateString, { isCompleted, marking }); // Debug log
 
       dates.push(
         <View key={dateString} style={dayStyle}>
           <View style={styles.dateContainer}>
-            <Text style={textStyle}>
-              {currentDate.getDate()}
-            </Text>
+            <View style={styles.stackContainer}>
+              <Text style={textStyle}>
+                {currentDate.getDate()}
+              </Text>
+              {marking?.type && (
+                <View style={styles.iconContainer}>
+                  <Entypo
+                    name="circle"
+                    size={32}
+                    color={marking.type === 'completed' ? '#4CAF50' : '#FF5252'}
+                    style={{ opacity: 0.9 }}
+                  />
+                </View>
+              )}
+            </View>
           </View>
         </View>
       );
@@ -192,31 +200,47 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
             return (
               <View style={[
                 styles.calendarDay,
-                marking && { backgroundColor: marking.backgroundColor },
+                marking?.type === 'completed' && styles.completedDay,
                 isToday && styles.todayDay
               ]}>
-                <Text style={[
-                  styles.dayText,
-                  isToday && styles.todayText,
-                  marking?.type === 'completed' && styles.completedText,
-                  marking?.type === 'missed' && styles.missedText,
-                  marking?.type === 'active' && styles.activeText
-                ]}>
-                  {date.day}
-                </Text>
+                <View style={styles.stackContainer}>
+                  <Text style={[
+                    styles.dayText,
+                    isToday && styles.todayText,
+                    marking?.type === 'completed' && styles.completedText
+                  ]}>
+                    {date.day}
+                  </Text>
+                  {marking?.type && (
+                    <View style={styles.iconContainer}>
+                      <Entypo
+                        name="circle"
+                        size={32}
+                        color={marking.type === 'completed' ? '#4CAF50' : '#FF5252'}
+                        style={{ opacity: 0.9 }}
+                      />
+                    </View>
+                  )}
+                </View>
               </View>
             );
           }}
           theme={{
-            backgroundColor: Colors.background.primary,
-            calendarBackground: Colors.background.primary,
-            textSectionTitleColor: Colors.gray[800],
-            textSectionTitleDisabledColor: Colors.gray[600],
-            monthTextColor: Colors.gray[800],
+            backgroundColor: '#FFFFFF',
+            calendarBackground: '#FFFFFF',
+            textSectionTitleColor: Colors.text.calendar,
+            textSectionTitleDisabledColor: Colors.text.calendar,
+            monthTextColor: Colors.text.calendar,
+            textDayColor: Colors.text.calendar,
+            textDisabledColor: `${Colors.text.calendar}80`,
+            dayTextColor: Colors.text.calendar,
+            todayTextColor: Colors.text.calendar,
             textMonthFontSize: 16,
-            textMonthFontWeight: 'bold',
+            textMonthFontWeight: '700',
             textDayHeaderFontWeight: '600',
             textDayHeaderFontSize: 14,
+            textDayFontSize: 16,
+            textDayHeaderColor: Colors.text.calendar,
           }}
         />
       </View>
@@ -236,20 +260,20 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
 
 const styles = StyleSheet.create<Styles>({
   container: {
-    backgroundColor: Colors.background.primary,
+    backgroundColor: '#FFFFFF',
     overflow: 'hidden',
   },
   weekStripContainer: {
     borderBottomWidth: 1,
     borderBottomColor: Colors.gray[200],
-    backgroundColor: Colors.background.secondary,
+    backgroundColor: '#FFFFFF',
   },
   weekStrip: {
     height: 60,
     flexDirection: 'row',
   },
   weekStripContent: {
-    paddingHorizontal: Spacing.xl * 2, // Add extra padding for scrolling
+    paddingHorizontal: Spacing.xl * 2,
     alignItems: 'center',
   },
   weekDay: {
@@ -257,38 +281,55 @@ const styles = StyleSheet.create<Styles>({
     height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderRadius: 24,
     marginHorizontal: 2,
     marginVertical: 6,
+    position: 'relative',
   },
   calendarDay: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderRadius: 24,
     margin: 2,
+    position: 'relative',
   },
   todayDay: {
-    borderWidth: 1,
-    borderColor: Colors.primary.default,
+    backgroundColor: Colors.background.primary,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
+  completedDay: {},
   dateContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
     height: '100%',
+    position: 'relative',
+    borderWidth: 0,
+    margin: 0,
+    padding: 0,
   },
   dayText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.text.primary,
+    color: Colors.text.calendar,
   },
   todayText: {
-    color: Colors.primary.default,
+    color: Colors.text.calendar,
+    fontWeight: '700',
   },
   completedText: {
-    color: Colors.success.dark,
+    color: Colors.text.calendar,
+    fontWeight: '700',
+    opacity: 0.7,
   },
   missedText: {
     color: Colors.danger.dark,
@@ -306,10 +347,38 @@ const styles = StyleSheet.create<Styles>({
   expandedCalendarContainer: {
     flex: 1,
     opacity: 1,
+    backgroundColor: '#FFFFFF',
   },
   hidden: {
     height: 0,
     opacity: 0,
+  },
+  streakIcon: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  stackContainer: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  iconContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
