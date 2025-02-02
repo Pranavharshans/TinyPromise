@@ -1,10 +1,19 @@
 # TinyPromise Implementation Log
 
-Last Updated: 2/2/2025, 2:50:43 PM
+Last Updated: 2/2/2025, 6:15:01 PM
 
 ## Implemented Features
 
-### Fix Pausing Habits and Blue Color Indication
+### Add Resume Option for Paused Habits
+- Date: 2/2/2025, 6:15:01 PM
+- Description: Added ability to resume paused habits:
+  - `HabitActionMenu` now shows different options based on habit status
+  - Shows "Pause Habit" for active habits
+  - Shows "Resume Habit" in blue for paused habits
+  - Updated HabitCard to handle resuming habits via updateHabitStatus
+  - Users can now freely switch habits between active and paused states
+
+### Fix Visual Indication for Paused Habits
 - Date: 2/2/2025, 2:50:43 PM
 - Description: Fixed habit pause functionality and color indication:
   - Fixed pause functionality to use `updateHabitStatus` from habit context
@@ -13,7 +22,6 @@ Last Updated: 2/2/2025, 2:50:43 PM
     - Light blue background
     - Blue streak number
     - Blue badge with streak count
-  - Ensures proper visual feedback when habits are paused
 
 ### Fix Habit Creation Error
 - Date: 2/2/2025, 2:30:48 PM

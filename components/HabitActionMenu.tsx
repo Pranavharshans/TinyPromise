@@ -12,18 +12,22 @@ import { Colors, Typography, Spacing, BorderRadius } from '../constants/theme';
 
 interface HabitActionMenuProps {
   visible: boolean;
+  habitStatus: 'active' | 'completed';
   onClose: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onPause?: () => void;
+  onResume?: () => void;
 }
 
 export default function HabitActionMenu({
   visible,
+  habitStatus,
   onClose,
   onEdit,
   onDelete,
   onPause,
+  onResume
 }: HabitActionMenuProps) {
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -84,7 +88,9 @@ export default function HabitActionMenu({
           ]}
         >
           {renderAction('Edit Habit', onEdit)}
-          {renderAction('Pause Habit', onPause)}
+          {habitStatus === 'active'
+            ? renderAction('Pause Habit', onPause)
+            : renderAction('Resume Habit', onResume, Colors.primary.default)}
           {renderAction('Delete Habit', onDelete, Colors.danger.default)}
         </Animated.View>
       </TouchableOpacity>

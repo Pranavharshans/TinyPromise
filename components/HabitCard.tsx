@@ -209,6 +209,7 @@ const HabitCard = ({
         </Card>
         <HabitActionMenu
           visible={menuVisible}
+          habitStatus={habit.status}
           onClose={() => setMenuVisible(false)}
           onEdit={() => {
             console.log('Edit habit:', habit.id);
@@ -227,6 +228,14 @@ const HabitCard = ({
               console.log('Habit paused successfully:', habit.id);
             } catch (error) {
               console.error('Failed to pause habit:', error);
+            }
+          }}
+          onResume={async () => {
+            try {
+              await updateHabitStatus(habit.id, true);
+              console.log('Habit resumed successfully:', habit.id);
+            } catch (error) {
+              console.error('Failed to resume habit:', error);
             }
           }}
         />
