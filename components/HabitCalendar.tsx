@@ -55,22 +55,15 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
   const getMarkedDates = () => {
     const markedDates: Record<string, any> = {};
 
-    // Process streak history
-    habit.streakHistory.forEach(streak => {
-      const startDate = new Date(streak.startDate);
-      const endDate = new Date(streak.endDate);
-      
-      // Mark the range of dates
-      let currentDate = new Date(startDate);
-      while (currentDate <= endDate) {
-        const dateString = currentDate.toISOString().split('T')[0];
+    // Process check-in history
+    if (habit.checkInHistory && habit.checkInHistory.length > 0) {
+      habit.checkInHistory.forEach(dateString => {
         markedDates[dateString] = {
-          type: streak.completed ? 'completed' : 'missed',
+          type: 'completed',
           marked: true
         };
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-    });
+      });
+    }
 
     // If there's a lastChecked date and it's not already marked, mark it too
     if (habit.lastChecked && typeof habit.lastChecked === 'string') {
@@ -78,7 +71,18 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
       const lastCheckedString = lastCheckedDate.toISOString().split('T')[0];
       if (!markedDates[lastCheckedString]) {
         markedDates[lastCheckedString] = {
-          type: 'completed',
+          type: habit.status === 'paused' ? 'paused' : 'completed',
+          marked: true
+        };
+      }
+    }
+
+    // If habit is paused, mark today's date as paused if not already marked
+    if (habit.status === 'paused') {
+      const today = new Date().toISOString().split('T')[0];
+      if (!markedDates[today]) {
+        markedDates[today] = {
+          type: 'paused',
           marked: true
         };
       }
@@ -97,11 +101,11 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
     startDate.setDate(today.getDate() - 7);
     
     // Generate padding at start for better scrolling
-    for (let i = 0; i < 3; i++) {
-      dates.push(
+    dates.push(
+      ...Array.from({ length: 3 }, (_, i) => (
         <View key={`padding-start-${i}`} style={styles.weekDay} />
-      );
-    }
+      ))
+    );
     
     // Generate 15 days (7 before today, today, 7 after)
     for (let i = 0; i < 15; i++) {
@@ -139,7 +143,13 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
                   <Entypo
                     name="circle"
                     size={32}
-                    color={marking.type === 'completed' ? '#4CAF50' : '#FF5252'}
+                    color={
+                      marking.type === 'completed'
+                        ? Colors.success.default
+                        : marking.type === 'paused'
+                        ? Colors.habitState.paused.default
+                        : Colors.danger.default
+                    }
                     style={{ opacity: 0.9 }}
                   />
                 </View>
@@ -174,7 +184,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
         >
           {dates}
           {/* Add padding at end */}
-          {[0, 1, 2].map(i => (
+          {Array.from({ length: 3 }, (_, i) => (
             <View key={`padding-end-${i}`} style={styles.weekDay} />
           ))}
         </ScrollView>
@@ -216,7 +226,13 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
                       <Entypo
                         name="circle"
                         size={32}
-                        color={marking.type === 'completed' ? '#4CAF50' : '#FF5252'}
+                        color={
+                          marking.type === 'completed'
+                            ? Colors.success.default
+                            : marking.type === 'paused'
+                            ? Colors.habitState.paused.default
+                            : Colors.danger.default
+                        }
                         style={{ opacity: 0.9 }}
                       />
                     </View>
