@@ -10,20 +10,13 @@ import {
   Alert,
   StatusBar,
   Platform,
-  FlatList,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/auth';
 import { useHabits } from '../contexts/habit';
 import { Habit } from '../types/habit';
-import { Colors, Typography, Spacing, BorderRadius } from '../constants/theme';
+import { Colors, Typography, Spacing } from '../constants/theme';
 import HabitCard from '../components/HabitCard';
-import DraggableHabitList from '../components/DraggableHabitList';
-
-// Constants for list layout
-const CARD_HEIGHT = 80;
-const CARD_MARGIN = Spacing.md;
-const ITEM_HEIGHT = CARD_HEIGHT + CARD_MARGIN;
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -36,7 +29,6 @@ export default function DashboardScreen() {
     updateStreak,
     updateHabitStatus,
     refreshHabits,
-    reorderHabits,
     error
   } = useHabits();
 
@@ -45,11 +37,6 @@ export default function DashboardScreen() {
       refreshHabits();
     }
   }, [user]);
-
-  const isCheckedInToday = (lastChecked: number | null): boolean => {
-    if (!lastChecked) return false;
-    return new Date(lastChecked).getDate() === new Date().getDate();
-  };
 
   const handleCheckIn = async (habitId: string) => {
     try {
@@ -64,11 +51,11 @@ export default function DashboardScreen() {
             {
               text: 'Complete Habit',
               style: 'destructive',
-              onPress: () => updateHabitStatus(habitId, false)
+              onPress: () => updateHabitStatus(habitId, 'completed')
             },
             {
               text: 'Keep Going',
-              onPress: () => updateHabitStatus(habitId, true)
+              onPress: () => updateHabitStatus(habitId, 'active')
             }
           ]
         );
@@ -96,6 +83,14 @@ export default function DashboardScreen() {
       ]
     );
   };
+
+  const renderHabitItem = (habit: Habit, index: number) => (
+    <HabitCard
+      habit={habit}
+      onCheckIn={() => handleCheckIn(habit.id)}
+      index={index}
+    />
+  );
 
   if (error) {
     return (
@@ -150,37 +145,23 @@ export default function DashboardScreen() {
             </Text>
           </View>
         ) : (
-          <FlatList
-            data={activeHabits}
-            renderItem={({ item: habit, index }: { item: Habit; index: number }) => (
-              <HabitCard
-                habit={habit}
-                onCheckIn={() => handleCheckIn(habit.id)}
-                index={index}
-              />
-            )}
-            keyExtractor={item => item.id}
-            contentContainerStyle={styles.habitList}
-            ListHeaderComponent={() => (
-              <Text style={styles.sectionTitle}>Active Habits</Text>
-            )}
-            ListFooterComponent={() => (
-              <View>
-                {completedHabits.length > 0 && (
-                  <View style={styles.completedSection}>
-                    <Text style={styles.sectionTitle}>Completed</Text>
-                    {completedHabits.map((habit, index) => (
-                      <HabitCard
-                        key={habit.id}
-                        habit={habit}
-                        index={index + activeHabits.length}
-                      />
-                    ))}
-                  </View>
-                )}
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            <Text style={styles.sectionTitle}>Active Habits</Text>
+            {activeHabits.map((habit, index) => renderHabitItem(habit, index))}
+            
+            {completedHabits.length > 0 && (
+              <View style={styles.completedSection}>
+                <Text style={styles.sectionTitle}>Completed</Text>
+                {completedHabits.map((habit, index) => (
+                  <HabitCard
+                    key={habit.id}
+                    habit={habit}
+                    index={index + activeHabits.length}
+                  />
+                ))}
               </View>
             )}
-          />
+          </ScrollView>
         )}
       </View>
 
@@ -196,9 +177,9 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  habitList: {
+  scrollContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxl + 64, // Extra space for FAB
+    paddingBottom: 80, // Space for FAB
   },
   container: {
     flex: 1,
@@ -296,14 +277,12 @@ const styles = StyleSheet.create({
     color: Colors.text.tertiary,
     textAlign: 'center',
   },
-  section: {
-    marginBottom: Spacing.xl,
-  },
   sectionTitle: {
     fontSize: Typography.sizes.lg,
     fontWeight: Typography.weights.semibold,
     color: Colors.text.primary,
     marginBottom: Spacing.md,
+    paddingHorizontal: 0, // Remove padding since it's handled by scrollContent
   },
   fab: {
     position: 'absolute',

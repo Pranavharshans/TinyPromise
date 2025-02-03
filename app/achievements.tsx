@@ -1,14 +1,21 @@
-import React from 'react';
+import React, { useEffect, useContext } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { ThemedText } from '../components/ThemedText';
 import { ThemedView } from '../components/ThemedView';
 import { Badge } from '../components/ui/Badge';
 import { useBadges } from '../contexts/badges';
-import { BADGE_DEFINITIONS, BadgeId } from '../types/badges';
+import { BadgeId } from '../types/badges';
+import { BADGE_DEFINITIONS } from '../services/badges-data';
+import { BadgeContext } from '../contexts/badges';
 
 export default function AchievementsScreen() {
   const { badges, progress, isLoading } = useBadges();
+  const badgeContext = useContext(BadgeContext);
+
+  useEffect(() => {
+    console.log('BadgeContext value:', badgeContext);
+  }, [badgeContext]);
 
   const getProgressForBadge = (badgeId: BadgeId) => {
     switch (badgeId) {

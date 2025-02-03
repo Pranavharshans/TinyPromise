@@ -1,4 +1,5 @@
-import { Badge, BadgeId, BadgeProgress, BADGE_DEFINITIONS, UserBadge } from '../types/badges';
+import { Badge, BadgeId, BadgeProgress, UserBadge } from '../types/badges';
+import { BADGE_DEFINITIONS } from './badges-data';
 import { getFirestore, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 
 export class BadgeService {

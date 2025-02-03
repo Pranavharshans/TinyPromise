@@ -1,8 +1,41 @@
 # TinyPromise Implementation Log
 
-Last Updated: 2/2/2025, 10:16:39 PM
+Last Updated: 2/3/2025, 9:33:28 PM
 
 ## Implemented Features
+
+### Remove Draggable Habit Reordering
+- Date: 2/3/2025, 9:33:28 PM
+- Description: Removed drag-and-drop habit reordering functionality:
+  - Removed DraggableHabitList component
+  - Removed draggable-list type definitions
+  - Updated dashboard to use simple ScrollView for habit display
+  - Simplified habit list rendering without reordering capability
+
+### Add Draggable Habit Reordering
+- Date: 2/3/2025, 9:30:48 PM
+- Description: Implemented drag-and-drop habit reordering:
+  - Added DraggableHabitList component using react-native-draggable-flatlist
+  - Updated habit context to support reordering habits
+  - Updated DashboardScreen to use draggable list for active habits
+  - Habits maintain their order in both local storage and Firebase
+  - Added visual feedback during drag operations with scaling animation
+
+### Fix Badge System Module Resolution
+- Date: 2/2/2025, 10:40:16 PM
+- Description: Fixed badge system module resolution issue:
+  - Moved BADGE_DEFINITIONS constant from types/badges.d.ts to services/badges-data.ts
+  - Updated badge type definitions to only include type declarations
+  - Added BadgeProvider to app layout for achievements screen
+  - Fixed import paths in affected files
+  - Registered achievements screen in navigation stack
+
+### Fix Path Resolution and Asset Issues
+- Date: 2/2/2025, 10:24:39 PM
+- Description: Fixed various path resolution and asset loading issues:
+  - Updated app.json to use correct paths for assets in assets/images directory
+  - Reverted achievements.tsx to use relative imports for better compatibility
+  - Added path alias support in Metro config for future use
 
 ### Add Gamification and Badge System
 - Date: 2/2/2025, 10:16:39 PM

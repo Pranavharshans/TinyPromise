@@ -4,10 +4,46 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '../contexts/auth';
 import { HabitProvider } from '../contexts/habit';
 import { NotificationsProvider } from '../contexts/notifications';
+import { BadgeProvider } from '../contexts/badges';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
+
+// Root layout with providers
+export default function RootLayout() {
+  console.log('[Navigation] Initializing root layout...');
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <RootLayoutContent />
+      </AuthProvider>
+    </GestureHandlerRootView>
+  );
+}
+
+// Content wrapped in providers
+function RootLayoutContent() {
+  const { isLoading } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading) {
+      console.log('[Navigation] Auth initialized, hiding splash screen...');
+      // Hide splash screen once auth is initialized
+      SplashScreen.hideAsync();
+    }
+  }, [isLoading]);
+
+  return (
+    <NotificationsProvider>
+      <BadgeProvider>
+        <HabitProvider>
+          <RootLayoutNav />
+        </HabitProvider>
+      </BadgeProvider>
+    </NotificationsProvider>
+  );
+}
 
 // Handle protected routes
 function useProtectedRoute() {
@@ -64,17 +100,7 @@ function useProtectedRoute() {
 
 // Root layout wrapper with auth protection
 function RootLayoutNav() {
-  const { isLoading } = useAuth();
-
   useProtectedRoute();
-
-  useEffect(() => {
-    if (!isLoading) {
-      console.log('[Navigation] Auth initialized, hiding splash screen...');
-      // Hide splash screen once auth is initialized
-      SplashScreen.hideAsync();
-    }
-  }, [isLoading]);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
@@ -97,22 +123,14 @@ function RootLayoutNav() {
           gestureDirection: 'vertical'
         }}
       />
+      <Stack.Screen
+        name="achievements"
+        options={{
+          headerShown: true,
+          title: 'Achievements',
+          headerLargeTitle: true
+        }}
+      />
     </Stack>
-  );
-}
-
-// Root layout with providers
-export default function RootLayout() {
-  console.log('[Navigation] Initializing root layout...');
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <NotificationsProvider>
-          <HabitProvider>
-            <RootLayoutNav />
-          </HabitProvider>
-        </NotificationsProvider>
-      </AuthProvider>
-    </GestureHandlerRootView>
   );
 }

@@ -11,7 +11,7 @@ interface BadgeContextType {
   updateProgress: (updates: Partial<BadgeProgress>) => Promise<void>;
 }
 
-const BadgeContext = createContext<BadgeContextType | undefined>(undefined);
+export const BadgeContext = createContext<BadgeContextType | undefined>(undefined);
 
 export const BadgeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();

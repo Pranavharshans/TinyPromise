@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { Habit } from '../types/habit';
 import { habitService } from '../services/habit';
 import { useAuth } from './auth';
@@ -7,26 +7,36 @@ import { Toast } from '../components/ui/Toast';
 
 interface HabitContextType {
   habits: Habit[];
+  activeHabits: Habit[];
+  completedHabits: Habit[];
   isLoading: boolean;
+  error: string | null;
   createHabit: (habit: Omit<Habit, 'id'>) => Promise<void>;
   updateHabit: (id: string, updates: Partial<Habit>) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
   updateHabitStatus: (id: string, status: Habit['status']) => Promise<void>;
-  markHabitComplete: (id: string) => Promise<void>;
+  updateStreak: (id: string, completed: boolean) => Promise<any>;
+  refreshHabits: () => Promise<void>;
+  reorderHabits: (newOrder: Habit[]) => Promise<void>;
 }
 
 const HabitContext = createContext<HabitContextType | undefined>(undefined);
 
 export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const { updateProgress } = useBadges();
+  const badges = useBadges();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadHabits();
-  }, [user]);
+  const activeHabits = useMemo(() => 
+    habits.filter(habit => habit.status === 'active')
+  , [habits]);
+
+  const completedHabits = useMemo(() => 
+    habits.filter(habit => habit.status === 'completed')
+  , [habits]);
 
   const loadHabits = async () => {
     if (!user) {
@@ -38,16 +48,30 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const userHabits = await habitService.getUserHabits(user.uid);
       setHabits(userHabits);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error loading habits:', error);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading habits:', err);
+      setError('Failed to load habits');
+    } finally {
       setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    loadHabits();
+  }, [user]);
+
   const showToast = (message: string) => {
     setToastMessage(message);
   };
+
+  const updateBadgeProgress = useCallback(async (updates: Parameters<typeof badges.updateProgress>[0]) => {
+    try {
+      await badges.updateProgress(updates);
+    } catch (error) {
+      console.error('Error updating badge progress:', error);
+    }
+  }, [badges]);
 
   const createHabit = async (habit: Omit<Habit, 'id'>) => {
     if (!user) return;
@@ -55,10 +79,11 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const newHabit = await habitService.createHabit(user.uid, habit);
       setHabits(prev => [...prev, newHabit]);
-      await updateProgress({ habitsCreated: habits.length + 1 });
-      showToast('New habit created! You're on your way to building better habits! 🌱');
-    } catch (error) {
-      console.error('Error creating habit:', error);
+      await updateBadgeProgress({ habitsCreated: habits.length + 1 });
+      showToast("New habit created! You're on your way to building better habits! 🌱");
+    } catch (err) {
+      console.error('Error creating habit:', err);
+      setError('Failed to create habit');
     }
   };
 
@@ -66,14 +91,15 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!user) return;
 
     try {
-      await habitService.updateHabit(user.uid, id, updates);
+      await habitService.handleStreakDecision(id, true, user.uid);
       setHabits(prev => 
         prev.map(habit => 
           habit.id === id ? { ...habit, ...updates } : habit
         )
       );
-    } catch (error) {
-      console.error('Error updating habit:', error);
+    } catch (err) {
+      console.error('Error updating habit:', err);
+      setError('Failed to update habit');
     }
   };
 
@@ -84,7 +110,7 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const habit = habits.find(h => h.id === id);
       if (!habit) return;
 
-      await habitService.updateHabit(user.uid, id, { status });
+      await habitService.handleStreakDecision(id, status === 'active', user.uid);
       setHabits(prev =>
         prev.map(h =>
           h.id === id ? { ...h, status } : h
@@ -92,48 +118,52 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       );
 
       if (status === 'active' && habit.status === 'paused') {
-        showToast('Welcome back! Let's get this streak going again! 💪');
-        await updateProgress({ resumedHabits: 1 });
+        showToast("Welcome back! Let's get this streak going again! 💪");
+        await updateBadgeProgress({ resumedHabits: 1 });
       } else if (status === 'paused') {
-        showToast('Taking a break is okay. Come back when you're ready! 🌟');
+        showToast("Taking a break is okay. Come back when you're ready! 🌟");
       }
-    } catch (error) {
-      console.error('Error updating habit status:', error);
+    } catch (err) {
+      console.error('Error updating habit status:', err);
+      setError('Failed to update habit status');
     }
   };
 
-  const markHabitComplete = async (id: string) => {
+  const updateStreak = async (id: string, completed: boolean) => {
     if (!user) return;
 
     try {
       const habit = habits.find(h => h.id === id);
       if (!habit) return;
 
-      const updatedHabit = await habitService.markComplete(user.uid, id);
+      const progress = await habitService.updateStreak(id, completed, user.uid);
       setHabits(prev =>
         prev.map(h =>
-          h.id === id ? updatedHabit : h
+          h.id === id ? { ...h, currentStreak: progress.currentStreak, lastChecked: progress.lastChecked } : h
         )
       );
 
-      // Check if a streak was completed
-      if (updatedHabit.currentStreak && updatedHabit.currentStreak % 3 === 0) {
-        showToast('🎉 Amazing! You've completed another 3-day streak!');
-        await updateProgress({
+      if (progress.currentStreak && progress.currentStreak % 3 === 0) {
+        showToast("🎉 Amazing! You've completed another 3-day streak!");
+        await updateBadgeProgress({
           streaksCompleted: (habit.streaksCompleted || 0) + 1,
           totalStreaks: (habit.totalStreaks || 0) + 1,
         });
       } else {
         const motivationalMessages = [
-          'Keep going! You're building momentum! 🚀',
-          'One step closer to your goal! 🎯',
-          'You're making progress! Keep it up! ⭐️',
+          "Keep going! You're building momentum! 🚀",
+          "One step closer to your goal! 🎯",
+          "You're making progress! Keep it up! ⭐️",
         ];
         const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
         showToast(randomMessage);
       }
-    } catch (error) {
-      console.error('Error marking habit complete:', error);
+
+      return progress;
+    } catch (err) {
+      console.error('Error updating streak:', err);
+      setError('Failed to update streak');
+      throw err;
     }
   };
 
@@ -141,11 +171,42 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!user) return;
 
     try {
-      await habitService.deleteHabit(user.uid, id);
+      await habitService.deleteHabit(id, user.uid);
       setHabits(prev => prev.filter(habit => habit.id !== id));
       showToast('Habit deleted. Remember, you can always start again! 🌱');
-    } catch (error) {
-      console.error('Error deleting habit:', error);
+    } catch (err) {
+      console.error('Error deleting habit:', err);
+      setError('Failed to delete habit');
+    }
+  };
+
+  const refreshHabits = async () => {
+    setIsLoading(true);
+    await loadHabits();
+  };
+
+  const reorderHabits = async (newOrder: Habit[]) => {
+    if (!user) return;
+
+    try {
+      // Update the order property for each habit based on its position
+      const updatedHabits = newOrder.map((habit, index) => ({
+        ...habit,
+        order: index
+      }));
+
+      // Update local state immediately for responsiveness
+      setHabits(updatedHabits);
+
+      // Update the order in Firebase for each habit
+      for (const habit of updatedHabits) {
+        await habitService.updateHabitOrder(habit.id, habit.order, user.uid);
+      }
+    } catch (err) {
+      console.error('Error reordering habits:', err);
+      setError('Failed to reorder habits');
+      // Reload habits to ensure consistency
+      await loadHabits();
     }
   };
 
@@ -153,12 +214,17 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <HabitContext.Provider
       value={{
         habits,
+        activeHabits,
+        completedHabits,
         isLoading,
+        error,
         createHabit,
         updateHabit,
         deleteHabit,
         updateHabitStatus,
-        markHabitComplete,
+        updateStreak,
+        refreshHabits,
+        reorderHabits,
       }}
     >
       {children}
