@@ -133,12 +133,27 @@ const calculateOverallStats = (habits: Habit[]): OverallStats => {
     return top;
   }, null as { habit: Habit; stats: HabitStats } | null);
 
+  // Calculate longest streak across all habits
+  const longestStreak = Math.max(...habits.map(h => h.longestStreak || 0), 0);
+  
+  // Calculate current streak across all habits
+  const currentStreak = Math.max(...habits.map(h => h.currentStreak || 0), 0);
+  
+  // Calculate total streaks completed
+  const streaksCompleted = habits.reduce((acc, h) => acc + (h.streaksCompleted || 0), 0);
+  
+  // Calculate average completion rate
+  const completionRate = habits.length ?
+    habitStats.reduce((acc, h) => acc + h.stats.completionRate, 0) / habits.length : 0;
+  
   return {
     totalHabits: habits.length,
     activeHabits: activeHabits.length,
     completedHabits: completedHabits.length,
-    overallCompletionRate: habits.length ?
-      habitStats.reduce((acc, h) => acc + h.stats.completionRate, 0) / habits.length : 0,
+    currentStreak,
+    longestStreak,
+    streaksCompleted,
+    completionRate,
     averageStreak,
     topPerformingHabit: topPerforming?.habit.title || ''
   };
@@ -165,7 +180,10 @@ export const habitService = {
         description: input.description?.trim(),
         createdAt: new Date().toISOString(),
         currentStreak: 0,
+        longestStreak: 0,
+        streaksCompleted: 0,
         totalStreaks: 0,
+        checkInHistory: [],
         streakHistory: [],
         streakFreezes: [],
         reminder: {

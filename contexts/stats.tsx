@@ -14,7 +14,10 @@ const initialOverallStats: OverallStats = {
   totalHabits: 0,
   activeHabits: 0,
   completedHabits: 0,
-  overallCompletionRate: 0,
+  currentStreak: 0,
+  longestStreak: 0,
+  streaksCompleted: 0,
+  completionRate: 0,
   averageStreak: 0,
   topPerformingHabit: ''
 };
