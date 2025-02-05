@@ -17,6 +17,7 @@ import { useHabits } from '../contexts/habit';
 import { Habit } from '../types/habit';
 import { Colors, Typography, Spacing } from '../constants/theme';
 import HabitCard from '../components/HabitCard';
+import { IconSymbol } from '../components/ui/IconSymbol';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -165,6 +166,21 @@ export default function DashboardScreen() {
         )}
       </View>
 
+      {/* Bottom Navigation Bar */}
+      <View style={styles.navbar}>
+        <TouchableOpacity style={styles.navItem}>
+          <IconSymbol name="house.fill" size={24} color={Colors.primary.default} />
+          <Text style={styles.navLabel}>Dashboard</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.navItem}
+          onPress={() => router.push('/(tabs)/statistics')}
+        >
+          <IconSymbol name="chart.bar.fill" size={24} color={Colors.text.secondary} />
+          <Text style={[styles.navLabel, { color: Colors.text.secondary }]}>Statistics</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Floating Action Button */}
       <TouchableOpacity
         style={styles.fab}
@@ -179,7 +195,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: 80, // Space for FAB
+    paddingBottom: Platform.OS === 'ios' ? 140 : 120, // Space for FAB + Tab Bar
   },
   container: {
     flex: 1,
@@ -282,18 +298,55 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weights.semibold,
     color: Colors.text.primary,
     marginBottom: Spacing.md,
-    paddingHorizontal: 0, // Remove padding since it's handled by scrollContent
+    paddingHorizontal: 0,
+  },
+  navbar: {
+    flexDirection: 'row',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: Platform.OS === 'ios' ? 83 : 60,
+    backgroundColor: Colors.background.primary,
+    borderTopWidth: 1,
+    borderTopColor: Colors.gray[100],
+    paddingBottom: Platform.OS === 'ios' ? 20 : 0,
+    zIndex: 999,
+    ...Platform.select({
+      ios: {
+        shadowColor: Colors.text.primary,
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  navItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
+  navLabel: {
+    fontSize: 12,
+    marginTop: 4,
+    color: Colors.primary.default,
+    fontWeight: '600',
   },
   fab: {
     position: 'absolute',
     right: Spacing.lg,
-    bottom: Platform.OS === 'ios' ? Spacing.xl : Spacing.lg,
+    bottom: Platform.OS === 'ios' ? 100 : 80, // Position above tab bar
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: Colors.primary.default,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1000,
     ...Platform.select({
       ios: {
         shadowColor: Colors.primary.default,
