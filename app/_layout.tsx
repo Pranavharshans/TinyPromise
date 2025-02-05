@@ -92,7 +92,7 @@ function useProtectedRoute() {
         router.replace('/verify');
       } else if (user?.emailVerified && (inAuthGroup || isVerification)) {
         console.log('[Navigation] User is verified, redirecting to dashboard...');
-        router.replace('/dashboard');
+        router.replace('/(tabs)/');
       }
     }
   }, [isAuthenticated, segments, isLoading, user]);
@@ -104,33 +104,19 @@ function RootLayoutNav() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="onboarding" />
-      <Stack.Screen name="auth" />
-      <Stack.Screen name="verify" options={{ gestureEnabled: false }} />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      <Stack.Screen name="auth" options={{ headerShown: false }} />
+      <Stack.Screen name="verify" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen
-        name="dashboard"
+        name="(tabs)"
         options={{
-          gestureEnabled: false,
-          headerShown: false
+          headerShown: false,
+          presentation: 'containedModal',
         }}
       />
-      <Stack.Screen
-        name="add-habit"
-        options={{
-          presentation: 'modal',
-          gestureEnabled: true,
-          gestureDirection: 'vertical'
-        }}
-      />
-      <Stack.Screen
-        name="achievements"
-        options={{
-          headerShown: true,
-          title: 'Achievements',
-          headerLargeTitle: true
-        }}
-      />
+      <Stack.Screen name="add-habit" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="achievements" options={{ headerShown: true }} />
     </Stack>
   );
 }
