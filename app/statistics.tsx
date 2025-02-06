@@ -5,7 +5,6 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
-  Platform,
   Text,
   Dimensions,
 } from 'react-native';
@@ -14,14 +13,48 @@ import { Colors, Spacing, Typography, BorderRadius } from '../constants/theme';
 import StreakStats from '../components/statistics/StreakStats';
 import CompletionRate from '../components/statistics/CompletionRate';
 import OverallProgress from '../components/statistics/OverallProgress';
+import CompletionTrends from '../components/statistics/CompletionTrends';
 import { useHabits } from '../contexts/habit';
 import { useStats } from '../contexts/stats';
 
 const { width } = Dimensions.get('window');
 
+const NoHabitsView = () => (
+  <View style={styles.noHabitsContainer}>
+    <Text style={styles.noHabitsTitle}>No Active Habits</Text>
+    <Text style={styles.noHabitsText}>
+      Start tracking habits to see your statistics and progress
+    </Text>
+  </View>
+);
+
 export default function StatisticsScreen() {
   const { activeHabits } = useHabits();
   const { overallStats } = useStats();
+
+  // If no active habits, show the empty state
+  if (!activeHabits || activeHabits.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Stack.Screen
+          options={{
+            title: 'Analytics',
+            headerLargeTitle: true,
+          }}
+        />
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={Colors.background.primary}
+        />
+        <NoHabitsView />
+      </SafeAreaView>
+    );
+  }
+
+  const daysTracked = Math.ceil(
+    (Date.now() - new Date(Math.min(...activeHabits.map(h => new Date(h.createdAt).getTime()))).getTime()) /
+    (1000 * 60 * 60 * 24)
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -46,6 +79,7 @@ export default function StatisticsScreen() {
             Keep track of your habit-building journey
           </Text>
         </View>
+
         {/* Overall Summary Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Overall Summary</Text>
@@ -62,20 +96,29 @@ export default function StatisticsScreen() {
               <Text style={styles.metricValue}>
                 {overallStats.completionRate.toFixed(1)}%
               </Text>
-              <Text style={styles.metricLabel}>Average Completion Rate</Text>
+              <Text style={styles.metricLabel}>Success Rate</Text>
             </View>
             <View style={styles.metricCard}>
               <Text style={styles.metricValue}>
-                {overallStats.currentStreak}
+                {daysTracked}
               </Text>
-              <Text style={styles.metricLabel}>Current Streak</Text>
+              <Text style={styles.metricLabel}>Days Tracked</Text>
             </View>
             <View style={styles.metricCard}>
               <Text style={styles.metricValue}>
-                {overallStats.longestStreak}
+                {overallStats.streaksCompleted}
               </Text>
-              <Text style={styles.metricLabel}>Longest Streak</Text>
+              <Text style={styles.metricLabel}>Streaks Done</Text>
             </View>
+          </View>
+          
+          {/* Completion Trends Chart */}
+          <View style={styles.trendsSection}>
+            <Text style={styles.chartTitle}>30-Day Trends</Text>
+            <CompletionTrends 
+              streakHistory={activeHabits.flatMap(h => h.streakHistory)}
+              days={30}
+            />
           </View>
         </View>
 
@@ -97,7 +140,7 @@ export default function StatisticsScreen() {
 
         {/* Best Performing Section */}
         {overallStats.topPerformingHabit && (
-          <View style={styles.section}>
+          <View style={[styles.section, styles.topSection]}>
             <Text style={styles.sectionTitle}>Top Performance</Text>
             <View style={styles.topHabitCard}>
               <Text style={styles.topHabitTitle}>
@@ -161,7 +204,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   metricCard: {
-    width: '31%',
+    width: (width - Spacing.lg * 4) / 3,
     backgroundColor: Colors.background.secondary,
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
@@ -184,6 +227,15 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.sm,
     color: Colors.text.secondary,
     textAlign: 'center',
+  },
+  trendsSection: {
+    marginTop: Spacing.xl,
+  },
+  chartTitle: {
+    fontSize: Typography.sizes.md,
+    fontWeight: Typography.weights.semibold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.sm,
   },
   habitsContainer: {
     gap: Spacing.md,
@@ -210,6 +262,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.md,
   },
+  topSection: {
+    marginBottom: Spacing.xxl,
+  },
   topHabitCard: {
     backgroundColor: Colors.primary.light,
     borderRadius: BorderRadius.lg,
@@ -233,6 +288,24 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.xl,
     fontWeight: Typography.weights.bold,
     color: Colors.primary.default,
+    textAlign: 'center',
+  },
+  noHabitsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  noHabitsTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.md,
+    textAlign: 'center',
+  },
+  noHabitsText: {
+    fontSize: Typography.sizes.md,
+    color: Colors.text.secondary,
     textAlign: 'center',
   },
 });

@@ -11,6 +11,7 @@ interface HabitContextType {
   completedHabits: Habit[];
   isLoading: boolean;
   error: string | null;
+  clearError: () => void;
   createHabit: (habit: Omit<Habit, 'id'>) => Promise<void>;
   updateHabit: (id: string, updates: Partial<Habit>) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
@@ -37,6 +38,10 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const completedHabits = useMemo(() => 
     habits.filter(habit => habit.status === 'completed')
   , [habits]);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
 
   const loadHabits = async () => {
     if (!user) {
@@ -218,6 +223,7 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         completedHabits,
         isLoading,
         error,
+        clearError,
         createHabit,
         updateHabit,
         deleteHabit,

@@ -14,6 +14,7 @@ import { Colors, Spacing, Typography, BorderRadius } from '../../constants/theme
 import StreakStats from '../../components/statistics/StreakStats';
 import CompletionRate from '../../components/statistics/CompletionRate';
 import OverallProgress from '../../components/statistics/OverallProgress';
+import CompletionTrends from '../../components/statistics/CompletionTrends';
 import { useHabits } from '../../contexts/habit';
 import { useStats } from '../../contexts/stats';
 
@@ -76,6 +77,14 @@ export default function StatisticsScreen() {
               </Text>
               <Text style={styles.metricLabel}>Longest Streak</Text>
             </View>
+          </View>
+
+          {/* Completion Trends Chart */}
+          <View style={styles.trendsSection}>
+            <CompletionTrends 
+              streakHistory={activeHabits.flatMap(h => h.streakHistory)}
+              days={30}
+            />
           </View>
         </View>
 
@@ -184,6 +193,9 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.sm,
     color: Colors.text.secondary,
     textAlign: 'center',
+  },
+  trendsSection: {
+    marginTop: Spacing.xl,
   },
   habitsContainer: {
     gap: Spacing.md,
