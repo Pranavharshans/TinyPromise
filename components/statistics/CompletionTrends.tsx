@@ -1,6 +1,15 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet, Text, Dimensions, Platform } from 'react-native';
-import { VictoryLine, VictoryChart, VictoryAxis } from 'victory-native';
+import {
+  VictoryLine as VLine,
+  VictoryChart as VChart,
+  VictoryAxis as VAxis
+} from 'victory-native';
+
+// Aliasing to ensure we're using the correct components
+const VictoryLine = VLine;
+const VictoryChart = VChart;
+const VictoryAxis = VAxis;
 import { Colors, Spacing, BorderRadius, Typography } from '../../constants/theme';
 import { HabitStreak } from '../../types/habit';
 
@@ -9,7 +18,7 @@ interface CompletionTrendsProps {
   days?: number;
 }
 
-export const CompletionTrends: React.FC<CompletionTrendsProps> = ({
+const CompletionTrends: React.FC<CompletionTrendsProps> = ({
   streakHistory,
   days = 30
 }) => {
