@@ -23,7 +23,17 @@ export class BadgeService {
 
   async updateProgress(userId: string, progress: BadgeProgress): Promise<void> {
     const docRef = doc(this.db, 'users', userId, 'data', 'badges');
-    await updateDoc(docRef, { progress });
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      // Initialize the document with empty badges array and progress
+      await setDoc(docRef, {
+        badges: [],
+        progress: progress
+      });
+    } else {
+      await updateDoc(docRef, { progress });
+    }
   }
 
   async awardBadge(userId: string, badgeId: BadgeId): Promise<void> {

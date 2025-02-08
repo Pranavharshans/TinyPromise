@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
-import { Habit } from '../types/habit';
+import { Habit, CreateHabitInput } from '../types/habit';
 import { habitService } from '../services/habit';
 import { useAuth } from './auth';
 import { useBadges } from './badges';
@@ -12,7 +12,7 @@ interface HabitContextType {
   isLoading: boolean;
   error: string | null;
   clearError: () => void;
-  createHabit: (habit: Omit<Habit, 'id'>) => Promise<void>;
+  createHabit: (habit: CreateHabitInput) => Promise<void>;
   updateHabit: (id: string, updates: Partial<Habit>) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
   updateHabitStatus: (id: string, status: Habit['status']) => Promise<void>;
@@ -78,11 +78,11 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [badges]);
 
-  const createHabit = async (habit: Omit<Habit, 'id'>) => {
+  const createHabit = async (input: CreateHabitInput) => {
     if (!user) return;
 
     try {
-      const newHabit = await habitService.createHabit(user.uid, habit);
+      const newHabit = await habitService.createHabit(user.uid, input);
       setHabits(prev => [...prev, newHabit]);
       await updateBadgeProgress({ habitsCreated: habits.length + 1 });
       showToast("New habit created! You're on your way to building better habits! 🌱");

@@ -109,11 +109,18 @@ export default function AddHabitScreen() {
 
     try {
       console.log('[AddHabit] Calling createHabit...');
-      const newHabit = await createHabit(
-        formState.title.trim(),
-        formState.description.trim() || undefined
-      );
-      console.log('[AddHabit] Habit created successfully:', newHabit);
+      if (!formState.title) {
+        setFormState(prev => ({ ...prev, error: 'Title is required' }));
+        return;
+      }
+
+      const habitInput = {
+        title: formState.title.trim(),
+        description: formState.description?.trim() || undefined
+      };
+      
+      await createHabit(habitInput);
+      console.log('[AddHabit] Habit created successfully');
       
       // Clear timeout since operation succeeded
       clearTimeout(timeout);
@@ -124,17 +131,7 @@ export default function AddHabitScreen() {
         error: null
       }));
 
-      // Show success message before navigation
-      Alert.alert(
-        'Success',
-        'Habit created successfully!',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.push('/dashboard')
-          }
-        ]
-      );
+      router.push('/dashboard');
 
     } catch (error) {
       console.error('[AddHabit] Error creating habit:', error);

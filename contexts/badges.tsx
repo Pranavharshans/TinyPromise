@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Badge, BadgeId, BadgeProgress, UserBadge } from '../types/badges';
 import { badgeService } from '../services/badges';
 import { useAuth } from './auth';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 interface BadgeContextType {
   badges: UserBadge[];
@@ -40,8 +41,22 @@ export const BadgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
 
       try {
-        const userBadges = await badgeService.getUserBadges(user.uid);
+        const [userBadges, userProgress] = await Promise.all([
+          badgeService.getUserBadges(user.uid),
+          getDoc(doc(getFirestore(), 'users', user.uid, 'data', 'badges'))
+        ]);
+
         setBadges(userBadges);
+        
+        // Initialize progress from Firestore or use default
+        const progressData = userProgress.exists() ? userProgress.data().progress : {
+          streaksCompleted: 0,
+          habitsCreated: 0,
+          resumedHabits: 0,
+          totalStreaks: 0
+        };
+        
+        setProgress(progressData);
         setIsLoading(false);
       } catch (error) {
         console.error('Error loading badges:', error);
