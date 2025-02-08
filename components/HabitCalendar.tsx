@@ -54,6 +54,10 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
 
   const getMarkedDates = () => {
     const markedDates: Record<string, any> = {};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const createdAt = new Date(habit.createdAt);
+    createdAt.setHours(0, 0, 0, 0);
 
     // Process check-in history
     if (habit.checkInHistory && habit.checkInHistory.length > 0) {
@@ -63,6 +67,19 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
           marked: true
         };
       });
+    }
+
+    // Mark incomplete days (days before today where there was no check-in)
+    let currentDate = new Date(createdAt);
+    while (currentDate < today) {
+      const dateString = currentDate.toISOString().split('T')[0];
+      if (!markedDates[dateString] && habit.status !== 'paused') {
+        markedDates[dateString] = {
+          type: 'incomplete',
+          marked: true
+        };
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
     }
 
     // If there's a lastChecked date and it's not already marked, mark it too
@@ -79,9 +96,9 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
 
     // If habit is paused, mark today's date as paused if not already marked
     if (habit.status === 'paused') {
-      const today = new Date().toISOString().split('T')[0];
-      if (!markedDates[today]) {
-        markedDates[today] = {
+      const todayString = today.toISOString().split('T')[0];
+      if (!markedDates[todayString]) {
+        markedDates[todayString] = {
           type: 'paused',
           marked: true
         };
@@ -148,7 +165,9 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
                         ? Colors.success.default
                         : marking.type === 'paused'
                         ? Colors.habitState.paused.default
-                        : Colors.danger.default
+                        : marking.type === 'incomplete'
+                        ? Colors.danger.default
+                        : Colors.gray[400]
                     }
                     style={{ opacity: 0.9 }}
                   />
@@ -231,7 +250,9 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
                             ? Colors.success.default
                             : marking.type === 'paused'
                             ? Colors.habitState.paused.default
-                            : Colors.danger.default
+                            : marking.type === 'incomplete'
+                            ? Colors.danger.default
+                            : Colors.gray[400]
                         }
                         style={{ opacity: 0.9 }}
                       />
