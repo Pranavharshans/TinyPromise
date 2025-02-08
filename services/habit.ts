@@ -37,6 +37,12 @@ interface StoredHabit extends Habit {
   _sync?: SyncMetadata;
 }
 
+// Helper function to format date to YYYY-MM-DD
+const formatDateToYYYYMMDD = (date: Date | number | string): string => {
+  const d = new Date(date);
+  return d.toISOString().split('T')[0];
+};
+
 // Helper function to calculate streak end date
 const calculateStreakEnd = (now: number, currentStreak: number): number => {
   if (currentStreak === 0) return 0;
@@ -401,39 +407,54 @@ export const habitService = {
         habit = firebaseHabit;
       }
 
-      const now = Date.now();
-      const lastChecked = habit.lastChecked || 0;
-      const isNewDay = new Date(lastChecked).getDate() !== new Date(now).getDate();
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // Reset time part to ensure consistent date comparison
+      const todayFormatted = formatDateToYYYYMMDD(now);
+      const lastCheckedFormatted = habit.lastChecked ? formatDateToYYYYMMDD(habit.lastChecked) : '';
       
-      if (!isNewDay && habit.lastChecked) {
+      // Check if already checked in today
+      if (lastCheckedFormatted === todayFormatted) {
         console.log('[HabitService] Already checked in today');
         return {
           habitId,
           currentStreak: habit.currentStreak,
-          lastChecked: habit.lastChecked,
+          lastChecked: lastCheckedFormatted,
           todayCompleted: true,
-          streakEndsAt: calculateStreakEnd(now, habit.currentStreak)
+          streakEndsAt: calculateStreakEnd(+now, habit.currentStreak)
         };
       }
 
       let currentStreak = habit.currentStreak;
       const streakHistory = [...habit.streakHistory];
+      const checkInHistory = [...(habit.checkInHistory || [])];
 
       if (completed) {
-        currentStreak = isNewDay ? currentStreak + 1 : currentStreak;
+        // Add to check-in history if not already there
+        if (!checkInHistory.includes(todayFormatted)) {
+          checkInHistory.push(todayFormatted);
+        }
+
+        currentStreak += 1;
         
         if (currentStreak === 3) {
+          // For a 3-day streak, create entry from two days ago to today
+          const twoDaysAgo = new Date(now);
+          twoDaysAgo.setDate(now.getDate() - 2);
+
           streakHistory.push({
-            startDate: new Date(now - (2 * 24 * 60 * 60 * 1000)).toISOString(),
-            endDate: new Date(now).toISOString(),
+            startDate: formatDateToYYYYMMDD(twoDaysAgo),
+            endDate: todayFormatted,
             completed: true
           });
         }
       } else {
         if (currentStreak > 0) {
+          const startDate = new Date(now);
+          startDate.setDate(now.getDate() - currentStreak);
+
           streakHistory.push({
-            startDate: new Date(now - (currentStreak * 24 * 60 * 60 * 1000)).toISOString(),
-            endDate: new Date(now).toISOString(),
+            startDate: formatDateToYYYYMMDD(startDate),
+            endDate: todayFormatted,
             completed: false
           });
         }
@@ -442,8 +463,9 @@ export const habitService = {
 
       const updates = {
         currentStreak,
-        lastChecked: new Date(now).toISOString(),
+        lastChecked: todayFormatted,
         streakHistory,
+        checkInHistory,
         totalStreaks: streakHistory.length
       };
 
@@ -460,9 +482,9 @@ export const habitService = {
       return {
         habitId,
         currentStreak,
-        lastChecked: new Date(now).toISOString(),
+        lastChecked: todayFormatted,
         todayCompleted: completed,
-        streakEndsAt: calculateStreakEnd(now, currentStreak)
+        streakEndsAt: calculateStreakEnd(now.getTime(), currentStreak)
       };
     } catch (error) {
       if (error instanceof FirestoreError || error instanceof FirebaseError) {
