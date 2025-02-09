@@ -1,8 +1,20 @@
 # TinyPromise Implementation Log
 
-Last Update: 2/8/2025, 10:20 PM IST
+Last Update: 2/9/2025, 7:13 PM IST
 
 ## Implemented Features
+
+### Dashboard Filter System Enhancement (2/9/2025)
+- Added new FilterChips component for habit status filtering
+- Implemented filter tabs for Active, Paused, and Completed habits
+- Added state management for filtered habit display
+- Improved UI to show habit counts for each status
+- Enhanced empty state handling for filtered views
+
+### Dashboard List Rendering Fix (2/9/2025)
+- Fixed React warning about missing key props in DashboardScreen
+- Added unique key props to HabitCard components in active habits list
+- Improved list rendering performance and React reconciliation
 
 ### Calendar Bug Fix - Same Day Check-in Indicators (2/8/2025)
 - Fixed habit check-in date tracking to show green circles on the correct day

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,9 @@ import { Habit } from '../types/habit';
 import { Colors, Typography, Spacing } from '../constants/theme';
 import HabitCard from '../components/HabitCard';
 import { IconSymbol } from '../components/ui/IconSymbol';
+import FilterChips, { FilterOption } from '../components/ui/FilterChips';
+
+type FilterStatus = 'active' | 'paused' | 'completed';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -26,12 +29,33 @@ export default function DashboardScreen() {
     habits,
     isLoading,
     activeHabits,
+    pausedHabits,
     completedHabits,
     updateStreak,
     updateHabitStatus,
     refreshHabits,
     error
   } = useHabits();
+  const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('active');
+
+  const filterOptions: FilterOption[] = [
+    { id: 'active', label: 'Active', count: activeHabits.length },
+    { id: 'paused', label: 'Paused', count: pausedHabits.length },
+    { id: 'completed', label: 'Completed', count: completedHabits.length },
+  ];
+
+  const filteredHabits = useMemo(() => {
+    switch (selectedFilter) {
+      case 'active':
+        return activeHabits;
+      case 'paused':
+        return pausedHabits;
+      case 'completed':
+        return completedHabits;
+      default:
+        return [];
+    }
+  }, [selectedFilter, activeHabits, pausedHabits, completedHabits]);
 
   useEffect(() => {
     if (user) {
@@ -87,6 +111,7 @@ export default function DashboardScreen() {
 
   const renderHabitItem = (habit: Habit, index: number) => (
     <HabitCard
+      key={habit.id}
       habit={habit}
       onCheckIn={() => handleCheckIn(habit.id)}
       index={index}
@@ -136,10 +161,10 @@ export default function DashboardScreen() {
             <ActivityIndicator size="large" color={Colors.primary.default} />
             <Text style={styles.loadingText}>Loading habits...</Text>
           </View>
-        ) : activeHabits.length === 0 ? (
+        ) : habits.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>
-              No active habits yet.{'\n'}Start building better habits today!
+              No habits yet.{'\n'}Start building better habits today!
             </Text>
             <Text style={styles.emptyStateSecondary}>
               Tap the + button below to get started
@@ -147,19 +172,19 @@ export default function DashboardScreen() {
           </View>
         ) : (
           <ScrollView contentContainerStyle={styles.scrollContent}>
-            <Text style={styles.sectionTitle}>Active Habits</Text>
-            {activeHabits.map((habit, index) => renderHabitItem(habit, index))}
-            
-            {completedHabits.length > 0 && (
-              <View style={styles.completedSection}>
-                <Text style={styles.sectionTitle}>Completed</Text>
-                {completedHabits.map((habit, index) => (
-                  <HabitCard
-                    key={habit.id}
-                    habit={habit}
-                    index={index + activeHabits.length}
-                  />
-                ))}
+            <FilterChips
+              options={filterOptions}
+              selectedId={selectedFilter}
+              onSelect={(id) => setSelectedFilter(id as FilterStatus)}
+              style={styles.filterChips}
+            />
+            {filteredHabits.length > 0 ? (
+              filteredHabits.map((habit, index) => renderHabitItem(habit, index))
+            ) : (
+              <View style={styles.emptyFilterState}>
+                <Text style={styles.emptyFilterText}>
+                  No {selectedFilter} habits
+                </Text>
               </View>
             )}
           </ScrollView>
@@ -196,6 +221,20 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Platform.OS === 'ios' ? 140 : 120, // Space for FAB + Tab Bar
+  },
+  filterChips: {
+    marginBottom: Spacing.lg,
+  },
+  emptyFilterState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.xxl,
+  },
+  emptyFilterText: {
+    fontSize: Typography.sizes.md,
+    color: Colors.text.secondary,
+    textAlign: 'center',
   },
   container: {
     flex: 1,

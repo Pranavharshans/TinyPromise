@@ -8,6 +8,7 @@ import { Toast } from '../components/ui/Toast';
 interface HabitContextType {
   habits: Habit[];
   activeHabits: Habit[];
+  pausedHabits: Habit[];
   completedHabits: Habit[];
   isLoading: boolean;
   error: string | null;
@@ -31,11 +32,15 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [error, setError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const activeHabits = useMemo(() => 
+  const activeHabits = useMemo(() =>
     habits.filter(habit => habit.status === 'active')
   , [habits]);
 
-  const completedHabits = useMemo(() => 
+  const pausedHabits = useMemo(() =>
+    habits.filter(habit => habit.status === 'paused')
+  , [habits]);
+
+  const completedHabits = useMemo(() =>
     habits.filter(habit => habit.status === 'completed')
   , [habits]);
 
@@ -220,6 +225,7 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       value={{
         habits,
         activeHabits,
+        pausedHabits,
         completedHabits,
         isLoading,
         error,
