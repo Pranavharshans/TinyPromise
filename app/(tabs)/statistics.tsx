@@ -7,9 +7,7 @@ import {
   StatusBar,
   Platform,
   Text,
-  Dimensions,
 } from 'react-native';
-import { Stack } from 'expo-router';
 import { Colors, Spacing, Typography, BorderRadius } from '../../constants/theme';
 import StreakStats from '../../components/statistics/StreakStats';
 import CompletionRate from '../../components/statistics/CompletionRate';
@@ -18,20 +16,12 @@ import CompletionTrends from '../../components/statistics/CompletionTrends';
 import { useHabits } from '../../contexts/habit';
 import { useStats } from '../../contexts/stats';
 
-const { width } = Dimensions.get('window');
-
 export default function StatisticsScreen() {
   const { activeHabits } = useHabits();
   const { overallStats } = useStats();
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen
-        options={{
-          title: 'Analytics',
-          headerLargeTitle: true,
-        }}
-      />
       <StatusBar
         barStyle="dark-content"
         backgroundColor={Colors.background.primary}
@@ -47,6 +37,7 @@ export default function StatisticsScreen() {
             Keep track of your habit-building journey
           </Text>
         </View>
+
         {/* Overall Summary Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Overall Summary</Text>
@@ -133,6 +124,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: Spacing.lg,
+    paddingBottom: Platform.OS === 'ios' ? 88 : 60, // Account for tab bar
   },
   headerSection: {
     marginBottom: Spacing.xl,

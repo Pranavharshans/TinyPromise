@@ -1,8 +1,6 @@
-import { initializeApp, FirebaseApp, FirebaseError } from "firebase/app";
-import { getAuth, Auth } from "firebase/auth";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
-import { getFirestore, Firestore } from "firebase/firestore";
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 import {
   FIREBASE_API_KEY,
   FIREBASE_AUTH_DOMAIN,
@@ -13,7 +11,7 @@ import {
   FIREBASE_MEASUREMENT_ID
 } from '@env';
 
-console.log('[Firebase] Initializing Firebase...');
+console.log('[Firebase] Starting Firebase initialization...');
 
 const firebaseConfig = {
   apiKey: FIREBASE_API_KEY,
@@ -25,33 +23,22 @@ const firebaseConfig = {
   measurementId: FIREBASE_MEASUREMENT_ID
 };
 
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-
+let app;
 try {
-  // Initialize Firebase
   app = initializeApp(firebaseConfig);
-  
-  // Initialize Auth
-  auth = getAuth(app);
-
-  // Initialize Firestore
-  db = getFirestore(app);
-
   console.log('[Firebase] Firebase initialized successfully');
-} catch (error) {
-  const firebaseError = error as FirebaseError;
-  
-  if (firebaseError.code === 'auth/already-initialized') {
-    console.log('[Firebase] Auth already initialized, using existing instance');
-    app = initializeApp(firebaseConfig);
-    auth = getAuth();
-    db = getFirestore(app);
+} catch (error: any) {
+  if (error?.code === 'app/duplicate-app') {
+    console.log('[Firebase] Firebase already initialized, getting existing app');
+    app = initializeApp(firebaseConfig, 'TinyPromise');
   } else {
-    console.error('[Firebase] Initialization error:', error);
+    console.error('[Firebase] Firebase initialization error:', error);
     throw error;
   }
 }
+
+// Initialize services
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 export { app, auth, db };

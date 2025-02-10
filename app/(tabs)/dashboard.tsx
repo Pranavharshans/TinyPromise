@@ -146,7 +146,10 @@ export default function DashboardScreen() {
             </Text>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.scrollContent}>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
             <Text style={styles.sectionTitle}>Active Habits</Text>
             {activeHabits.map((habit, index) => renderHabitItem(habit, index))}
             
@@ -166,21 +169,6 @@ export default function DashboardScreen() {
         )}
       </View>
 
-      {/* Bottom Navigation Bar */}
-      <View style={styles.navbar}>
-        <TouchableOpacity style={styles.navItem}>
-          <IconSymbol name="house.fill" size={24} color={Colors.primary.default} />
-          <Text style={styles.navLabel}>Dashboard</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => router.push('/statistics')}
-        >
-          <IconSymbol name="chart.bar.fill" size={24} color={Colors.text.secondary} />
-          <Text style={[styles.navLabel, { color: Colors.text.secondary }]}>Statistics</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Floating Action Button */}
       <TouchableOpacity
         style={styles.fab}
@@ -195,7 +183,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Platform.OS === 'ios' ? 140 : 120, // Space for FAB + Tab Bar
+    paddingBottom: Platform.OS === 'ios' ? 90 : 70, // Space for FAB and tab bar
   },
   container: {
     flex: 1,
@@ -300,45 +288,10 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     paddingHorizontal: 0,
   },
-  navbar: {
-    flexDirection: 'row',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: Platform.OS === 'ios' ? 83 : 60,
-    backgroundColor: Colors.background.primary,
-    borderTopWidth: 1,
-    borderTopColor: Colors.gray[100],
-    paddingBottom: Platform.OS === 'ios' ? 20 : 0,
-    ...Platform.select({
-      ios: {
-        shadowColor: Colors.text.primary,
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-  },
-  navLabel: {
-    fontSize: 12,
-    marginTop: 4,
-    color: Colors.primary.default,
-    fontWeight: '600',
-  },
   fab: {
     position: 'absolute',
     right: Spacing.lg,
-    bottom: Platform.OS === 'ios' ? 100 : 80, // Position above tab bar
+    bottom: Platform.OS === 'ios' ? 32 : 24, // Adjusted for tab bar
     width: 56,
     height: 56,
     borderRadius: 28,
