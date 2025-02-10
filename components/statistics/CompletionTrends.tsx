@@ -1,17 +1,8 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, Text, Dimensions, Platform } from 'react-native';
-import {
-  VictoryLine as VLine,
-  VictoryChart as VChart,
-  VictoryAxis as VAxis
-} from 'victory-native';
-
-// Aliasing to ensure we're using the correct components
-const VictoryLine = VLine;
-const VictoryChart = VChart;
-const VictoryAxis = VAxis;
+import { View, StyleSheet, Text, Dimensions } from 'react-native';
 import { Colors, Spacing, BorderRadius, Typography } from '../../constants/theme';
 import { HabitStreak } from '../../types/habit';
+import Svg, { Path, Line, Text as SvgText } from 'react-native-svg';
 
 interface CompletionTrendsProps {
   streakHistory: HabitStreak[];
@@ -87,6 +78,100 @@ const CompletionTrends: React.FC<CompletionTrendsProps> = ({
     );
   }
 
+  const renderChart = () => {
+    if (chartData.length === 0) return null;
+
+    const width = Dimensions.get('window').width - (Spacing.md * 4);
+    const height = 180;
+    const padding = { top: 20, bottom: 30, left: 40, right: 20 };
+    const graphWidth = width - padding.left - padding.right;
+    const graphHeight = height - padding.top - padding.bottom;
+
+    // Find min/max values
+    const minY = 0;
+    const maxY = 100;
+    const minX = chartData[0].x;
+    const maxX = chartData[chartData.length - 1].x;
+
+    // Create points string for path
+    const points = chartData.map((point, index) => {
+      const x = padding.left + (graphWidth * (point.x - minX)) / (maxX - minX);
+      const y = padding.top + graphHeight - (graphHeight * (point.y - minY)) / (maxY - minY);
+      return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+    }).join(' ');
+
+    // Create axis labels
+    const yAxisLabels = [0, 25, 50, 75, 100].map(value => ({
+      value,
+      y: padding.top + graphHeight - (graphHeight * (value - minY)) / (maxY - minY)
+    }));
+
+    // X-axis labels (show only 4 dates)
+    const xAxisLabels = [0, 1, 2, 3].map(index => {
+      const pointIndex = Math.floor((chartData.length - 1) * (index / 3));
+      const point = chartData[pointIndex];
+      const date = new Date(point.x);
+      return {
+        text: `${date.getDate()}/${date.getMonth() + 1}`,
+        x: padding.left + (graphWidth * (point.x - minX)) / (maxX - minX)
+      };
+    });
+
+    return (
+      <Svg width={width} height={height}>
+        {/* Grid lines */}
+        {yAxisLabels.map(label => (
+          <Line
+            key={label.value}
+            x1={padding.left}
+            y1={label.y}
+            x2={width - padding.right}
+            y2={label.y}
+            stroke={Colors.text.secondary}
+            strokeWidth="0.5"
+            opacity={0.2}
+          />
+        ))}
+
+        {/* Y-axis labels */}
+        {yAxisLabels.map(label => (
+          <SvgText
+            key={label.value}
+            x={padding.left - 5}
+            y={label.y + 4}
+            textAnchor="end"
+            fill={Colors.text.secondary}
+            fontSize="10"
+          >
+            {label.value}%
+          </SvgText>
+        ))}
+
+        {/* X-axis labels */}
+        {xAxisLabels.map((label, index) => (
+          <SvgText
+            key={index}
+            x={label.x}
+            y={height - 10}
+            textAnchor="middle"
+            fill={Colors.text.secondary}
+            fontSize="10"
+          >
+            {label.text}
+          </SvgText>
+        ))}
+
+        {/* Line chart */}
+        <Path
+          d={points}
+          stroke={Colors.primary.default}
+          strokeWidth="2"
+          fill="none"
+        />
+      </Svg>
+    );
+  };
+
   console.log('[CompletionTrends] Rendering chart with', chartData.length, 'data points');
 
   return (
@@ -94,48 +179,7 @@ const CompletionTrends: React.FC<CompletionTrendsProps> = ({
       <Text style={styles.title}>Completion History</Text>
       <View style={styles.chartContainer}>
         {chartData.length > 0 ? (
-          <VictoryChart
-            height={200}
-            padding={{ top: 20, bottom: 30, left: 40, right: 20 }}
-          >
-            <VictoryAxis
-              tickFormat={(x) => {
-                const date = new Date(x);
-                return `${date.getDate()}/${date.getMonth() + 1}`;
-              }}
-              style={{
-                axis: { stroke: Colors.text.secondary },
-                tickLabels: { 
-                  fill: Colors.text.secondary,
-                  fontSize: 10
-                }
-              }}
-            />
-            <VictoryAxis
-              dependentAxis
-              tickFormat={(t) => `${Math.round(Number(t))}%`}
-              style={{
-                axis: { stroke: Colors.text.secondary },
-                tickLabels: { 
-                  fill: Colors.text.secondary,
-                  fontSize: 10
-                }
-              }}
-            />
-            <VictoryLine
-              data={chartData}
-              style={{
-                data: {
-                  stroke: Colors.primary.default,
-                  strokeWidth: 2
-                }
-              }}
-              animate={{
-                duration: 500,
-                onLoad: { duration: 500 }
-              }}
-            />
-          </VictoryChart>
+          renderChart()
         ) : (
           <View style={styles.noDataContainer}>
             <Text style={styles.noDataText}>
@@ -166,6 +210,8 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     padding: Spacing.sm,
     height: 220,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   placeholderChart: {
     height: 200,
