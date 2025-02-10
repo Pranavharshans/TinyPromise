@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import { Habit } from '../../types/habit';
 import { Colors, Typography, Spacing } from '../../constants/theme';
 import HabitCard from '../../components/HabitCard';
 import { IconSymbol } from '../../components/ui/IconSymbol';
+import FilterChips, { FilterOption } from '../../components/ui/FilterChips';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -26,18 +27,39 @@ export default function DashboardScreen() {
     habits,
     isLoading,
     activeHabits,
+    pausedHabits,
     completedHabits,
     updateStreak,
     updateHabitStatus,
     refreshHabits,
     error
   } = useHabits();
+  const [selectedStatus, setSelectedStatus] = useState<'active' | 'paused' | 'completed'>('active');
 
   useEffect(() => {
     if (user) {
       refreshHabits();
     }
   }, [user]);
+
+  const filterOptions: FilterOption[] = [
+    { id: 'active', label: 'Active', count: activeHabits.length },
+    { id: 'paused', label: 'Paused', count: pausedHabits.length },
+    { id: 'completed', label: 'Completed', count: completedHabits.length },
+  ];
+
+  const filteredHabits = useMemo(() => {
+    switch (selectedStatus) {
+      case 'active':
+        return activeHabits;
+      case 'paused':
+        return pausedHabits;
+      case 'completed':
+        return completedHabits;
+      default:
+        return [];
+    }
+  }, [selectedStatus, activeHabits, pausedHabits, completedHabits]);
 
   const handleCheckIn = async (habitId: string) => {
     try {
@@ -113,11 +135,6 @@ export default function DashboardScreen() {
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             <Text style={styles.title}>My Habits</Text>
-            {activeHabits.length > 0 && (
-              <Text style={styles.subtitle}>
-                {activeHabits.length} active • {completedHabits.length} completed
-              </Text>
-            )}
           </View>
           <TouchableOpacity
             style={styles.profileButton}
@@ -130,41 +147,36 @@ export default function DashboardScreen() {
         </View>
       </View>
 
+      <FilterChips
+        options={filterOptions}
+        selectedId={selectedStatus}
+        onSelect={(status) => setSelectedStatus(status as typeof selectedStatus)}
+        style={styles.filterChips}
+      />
       <View style={{ flex: 1 }}>
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={Colors.primary.default} />
             <Text style={styles.loadingText}>Loading habits...</Text>
           </View>
-        ) : activeHabits.length === 0 ? (
+        ) : filteredHabits.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>
-              No active habits yet.{'\n'}Start building better habits today!
+              No {selectedStatus} habits yet.
+              {selectedStatus === 'active' && '\nStart building better habits today!'}
             </Text>
-            <Text style={styles.emptyStateSecondary}>
-              Tap the + button below to get started
-            </Text>
+            {selectedStatus === 'active' && (
+              <Text style={styles.emptyStateSecondary}>
+                Tap the + button below to get started
+              </Text>
+            )}
           </View>
         ) : (
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.sectionTitle}>Active Habits</Text>
-            {activeHabits.map((habit, index) => renderHabitItem(habit, index))}
-            
-            {completedHabits.length > 0 && (
-              <View style={styles.completedSection}>
-                <Text style={styles.sectionTitle}>Completed</Text>
-                {completedHabits.map((habit, index) => (
-                  <HabitCard
-                    key={habit.id}
-                    habit={habit}
-                    index={index + activeHabits.length}
-                  />
-                ))}
-              </View>
-            )}
+            {filteredHabits.map((habit, index) => renderHabitItem(habit, index))}
           </ScrollView>
         )}
       </View>
@@ -207,6 +219,10 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     flex: 1,
+  },
+  filterChips: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
   },
   title: {
     fontSize: Typography.sizes.xl,
