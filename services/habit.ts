@@ -497,9 +497,9 @@ export const habitService = {
   /**
    * Continue or complete a streak after 3 days
    */
-  async handleStreakDecision(habitId: string, continue_: boolean, userId: string): Promise<void> {
+  async handleStreakDecision(habitId: string, newStatus: Habit['status'], userId: string): Promise<void> {
     try {
-      console.log('[HabitService] Handling streak decision:', { habitId, continue_ });
+      console.log('[HabitService] Handling streak decision:', { habitId, newStatus });
       
       if (!habitId) throw new Error('Habit ID is required');
       if (!userId) throw new Error('User ID is required');
@@ -513,8 +513,8 @@ export const habitService = {
       }
 
       const updates: Partial<StoredHabit> = {
-        currentStreak: continue_ ? 0 : habit.currentStreak,
-        status: continue_ ? 'active' : 'completed',
+        currentStreak: newStatus === 'active' ? 0 : habit.currentStreak,
+        status: newStatus,
       };
 
       if (habit.streakHistory.length > 0) {
@@ -522,8 +522,8 @@ export const habitService = {
         updates.streakHistory = lastStreak;
       }
 
-      // If completing the habit, cancel any active notifications
-      if (!continue_ && habit.reminder.notificationId) {
+      // If completing or pausing the habit, cancel any active notifications
+      if (newStatus !== 'active' && habit.reminder.notificationId) {
         await notificationService.cancelHabitReminder(habitId);
         updates.reminder = {
           ...habit.reminder,

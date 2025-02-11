@@ -101,12 +101,18 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!user) return;
 
     try {
-      await habitService.handleStreakDecision(id, true, user.uid);
-      setHabits(prev => 
-        prev.map(habit => 
-          habit.id === id ? { ...habit, ...updates } : habit
-        )
-      );
+      setHabits(prev => {
+        const habit = prev.find(h => h.id === id);
+        if (!habit) return prev;
+
+        const newStatus = updates.status || habit.status;
+        habitService.handleStreakDecision(id, newStatus, user.uid)
+          .catch(err => console.error('Error handling streak decision:', err));
+
+        return prev.map(h =>
+          h.id === id ? { ...h, ...updates } : h
+        );
+      });
     } catch (err) {
       console.error('Error updating habit:', err);
       setError('Failed to update habit');
@@ -120,7 +126,7 @@ export const HabitProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const habit = habits.find(h => h.id === id);
       if (!habit) return;
 
-      await habitService.handleStreakDecision(id, status === 'active', user.uid);
+      await habitService.handleStreakDecision(id, status, user.uid);
       setHabits(prev =>
         prev.map(h =>
           h.id === id ? { ...h, status } : h
