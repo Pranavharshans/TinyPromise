@@ -8,6 +8,7 @@ interface StatsContextProps {
   overallStats: OverallStats;
   updateStats: () => void;
   refreshStats: () => void;
+  getHabitStats: (habit: Habit) => HabitStats;
 }
 
 const initialOverallStats: OverallStats = {
@@ -26,7 +27,15 @@ const StatsContext = createContext<StatsContextProps>({
   habitStats: new Map(),
   overallStats: initialOverallStats,
   updateStats: () => {},
-  refreshStats: () => {}
+  refreshStats: () => {},
+  getHabitStats: () => ({
+    completionRate: 0,
+    longestStreak: 0,
+    currentStreak: 0,
+    totalCompletions: 0,
+    startDate: '',
+    lastCompletedDate: ''
+  })
 });
 
 export const useStats = () => {
@@ -59,6 +68,11 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setOverallStats(newOverallStats);
   }, [habits]);
 
+  // Get stats for a specific habit
+  const getHabitStats = useCallback((habit: Habit) => {
+    return habitStats.get(habit.id) || habitService.getHabitStats(habit);
+  }, [habitStats]);
+
   // Force refresh stats
   const refreshStats = useCallback(() => {
     calculateStats();
@@ -73,8 +87,9 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     habitStats,
     overallStats,
     updateStats: calculateStats,
-    refreshStats
-  }), [habitStats, overallStats, calculateStats, refreshStats]);
+    refreshStats,
+    getHabitStats
+  }), [habitStats, overallStats, calculateStats, refreshStats, getHabitStats]);
 
   return (
     <StatsContext.Provider value={value}>

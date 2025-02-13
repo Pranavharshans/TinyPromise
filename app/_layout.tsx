@@ -6,7 +6,9 @@ import { AuthProvider, useAuth } from '../contexts/auth';
 import { HabitProvider } from '../contexts/habit';
 import { NotificationsProvider } from '../contexts/notifications';
 import { BadgeProvider } from '../contexts/badges';
+import { StatsProvider } from '../contexts/stats';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import 'react-native-reanimated';
 import {
   FIREBASE_API_KEY,
   FIREBASE_AUTH_DOMAIN,
@@ -81,7 +83,9 @@ function RootLayoutContent() {
     <NotificationsProvider>
       <BadgeProvider>
         <HabitProvider>
-          <RootLayoutNav />
+          <StatsProvider>
+            <RootLayoutNav />
+          </StatsProvider>
         </HabitProvider>
       </BadgeProvider>
     </NotificationsProvider>

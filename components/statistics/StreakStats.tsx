@@ -1,105 +1,71 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Typography, Spacing, BorderRadius } from '../../constants/theme';
-import { useStats } from '../../contexts/stats';
+import { Colors, Typography, Spacing } from '../../constants/theme';
+import { useHabits } from '../../contexts/habit';
 
 interface StreakStatsProps {
   habitId: string;
 }
 
-export const StreakStats: React.FC<StreakStatsProps> = ({ habitId }) => {
-  const { habitStats } = useStats();
-  const stats = habitStats.get(habitId);
+const StreakStats: React.FC<StreakStatsProps> = ({ habitId }) => {
+  const { getHabitById } = useHabits();
+  const habit = getHabitById(habitId);
 
-  if (!stats) return null;
+  if (!habit) {
+    return null;
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Streak Stats</Text>
-      <View style={styles.statsRow}>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{stats.currentStreak}</Text>
-          <Text style={styles.statLabel}>Current</Text>
-        </View>
-        <View style={styles.separator} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{stats.longestStreak}</Text>
-          <Text style={styles.statLabel}>Longest</Text>
-        </View>
+      <View style={styles.statBlock}>
+        <Text style={styles.value}>{habit.currentStreak}</Text>
+        <Text style={styles.label}>Current Streak</Text>
       </View>
-      <View style={styles.streakBar}>
-        <View
-          style={[
-            styles.streakProgress,
-            { width: `${(stats.currentStreak / 3) * 100}%` }
-          ]}
-        />
+
+      <View style={styles.divider} />
+
+      <View style={styles.statBlock}>
+        <Text style={styles.value}>{habit.longestStreak}</Text>
+        <Text style={styles.label}>Longest Streak</Text>
       </View>
-      <Text style={styles.streakCaption}>
-        {stats.currentStreak === 0
-          ? 'Start your streak!'
-          : `${3 - stats.currentStreak} days until milestone`}
-      </Text>
+
+      <View style={styles.divider} />
+
+      <View style={styles.statBlock}>
+        <Text style={styles.value}>{habit.streaksCompleted}</Text>
+        <Text style={styles.label}>Total Streaks</Text>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    width: 160,
-    padding: Spacing.md,
-    backgroundColor: Colors.background.secondary,
-    borderRadius: BorderRadius.lg,
-    marginRight: Spacing.md,
-  },
-  title: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: Typography.weights.semibold,
-    color: Colors.text.primary,
-    marginBottom: Spacing.sm,
-  },
-  statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.md,
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.sm,
   },
-  statItem: {
+  statBlock: {
     flex: 1,
     alignItems: 'center',
   },
-  separator: {
-    width: 1,
-    height: 24,
-    backgroundColor: Colors.gray[200],
-    marginHorizontal: Spacing.sm,
-  },
-  statValue: {
-    fontSize: Typography.sizes.xl,
+  value: {
+    fontSize: Typography.sizes.lg,
     fontWeight: Typography.weights.bold,
-    color: Colors.primary.default,
+    color: Colors.text.primary,
+    marginBottom: Spacing.xs / 2,
   },
-  statLabel: {
-    fontSize: Typography.sizes.xs,
-    color: Colors.text.secondary,
-    marginTop: 2,
-  },
-  streakBar: {
-    height: 4,
-    backgroundColor: Colors.gray[100],
-    borderRadius: BorderRadius.full,
-    overflow: 'hidden',
-    marginBottom: Spacing.xs,
-  },
-  streakProgress: {
-    height: '100%',
-    backgroundColor: Colors.primary.default,
-    borderRadius: BorderRadius.full,
-  },
-  streakCaption: {
+  label: {
     fontSize: Typography.sizes.xs,
     color: Colors.text.secondary,
     textAlign: 'center',
+  },
+  divider: {
+    width: 1,
+    height: '80%',
+    backgroundColor: Colors.gray[200],
+    marginHorizontal: Spacing.sm,
   },
 });
 
