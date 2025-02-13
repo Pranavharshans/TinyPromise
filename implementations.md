@@ -1,3 +1,17 @@
+# Last Updated: 2/13/2025, 9:55 PM
+
+## Implemented Features
+
+### Paused Habit Visualization
+- Date: 2/13/2025
+- Added pausedAt field to track when habits are paused
+- Shows blue rings in the calendar from pause date to current date
+- Respects completed dates (doesn't show blue ring if the date was completed)
+- Updates streak UI to better visualize paused state
+
+## Planned Features
+
+(Add any planned features here)
 # TinyPromise Implementation Log
 
 Last Updated: 2025-02-11 12:02 PM IST

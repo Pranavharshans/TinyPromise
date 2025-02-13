@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors, Typography, Spacing } from '../../constants/theme';
 import { useHabits } from '../../contexts/habit';
+import { useStats } from '../../contexts/stats';
 
 interface StreakStatsProps {
   habitId: string;
@@ -9,31 +10,33 @@ interface StreakStatsProps {
 
 const StreakStats: React.FC<StreakStatsProps> = ({ habitId }) => {
   const { getHabitById } = useHabits();
+  const { getHabitStats } = useStats();
   const habit = getHabitById(habitId);
+  const stats = habit ? getHabitStats(habit) : null;
 
-  if (!habit) {
+  if (!habit || !stats) {
     return null;
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.statBlock}>
-        <Text style={styles.value}>{habit.currentStreak}</Text>
+        <Text style={styles.value}>{stats.currentStreak}</Text>
         <Text style={styles.label}>Current Streak</Text>
       </View>
 
       <View style={styles.divider} />
 
       <View style={styles.statBlock}>
-        <Text style={styles.value}>{habit.longestStreak}</Text>
+        <Text style={styles.value}>{stats.longestStreak}</Text>
         <Text style={styles.label}>Longest Streak</Text>
       </View>
 
       <View style={styles.divider} />
 
       <View style={styles.statBlock}>
-        <Text style={styles.value}>{habit.streaksCompleted}</Text>
-        <Text style={styles.label}>Total Streaks</Text>
+        <Text style={styles.value}>{stats.totalCompletions}</Text>
+        <Text style={styles.label}>Total Days</Text>
       </View>
     </View>
   );

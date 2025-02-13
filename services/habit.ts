@@ -84,36 +84,50 @@ const handleFirestoreError = (error: FirestoreError | FirebaseError, operation: 
 // Helper function to calculate completion rate
 const calculateCompletionRate = (streakHistory: HabitStreak[], startDate: string): number => {
   const start = new Date(startDate).getTime();
-  const now = Date.now();
-  const totalDays = Math.ceil((now - start) / (1000 * 60 * 60 * 24));
+  const now = new Date().setHours(23, 59, 59, 999);  // End of today
+  const totalDays = Math.max(1, Math.floor((now - start) / (1000 * 60 * 60 * 24)));
   
-  if (totalDays === 0) return 0;
+  let completedDays = 0;
+  streakHistory.forEach(streak => {
+    if (streak.completed) {
+      const streakStart = new Date(streak.startDate).getTime();
+      const streakEnd = new Date(streak.endDate).getTime();
+      const days = Math.ceil((streakEnd - streakStart) / (1000 * 60 * 60 * 24)) + 1;
+      completedDays += days;
+    }
+  });
   
-  const completedDays = streakHistory.reduce((acc, streak) => {
-    const streakStart = new Date(streak.startDate).getTime();
-    const streakEnd = new Date(streak.endDate).getTime();
-    return acc + Math.ceil((streakEnd - streakStart) / (1000 * 60 * 60 * 24));
-  }, 0);
-  
-  return (completedDays / totalDays) * 100;
+  return Math.min(100, (completedDays / totalDays) * 100);
 };
 
 // Calculate individual habit statistics
 const calculateHabitStats = (habit: Habit): HabitStats => {
+  // Calculate longest streak
   const longestStreak = Math.max(
     habit.currentStreak,
-    ...habit.streakHistory.map(streak => {
+    ...habit.streakHistory
+      .filter(streak => streak.completed)
+      .map(streak => {
+        const start = new Date(streak.startDate).getTime();
+        const end = new Date(streak.endDate).getTime();
+        return Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+      })
+  );
+
+  // Calculate total completions by counting actual completed days
+  const totalCompletions = habit.streakHistory
+    .filter(streak => streak.completed)
+    .reduce((acc, streak) => {
       const start = new Date(streak.startDate).getTime();
       const end = new Date(streak.endDate).getTime();
-      return Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-    })
-  );
+      return acc + Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    }, 0);
 
   return {
     completionRate: calculateCompletionRate(habit.streakHistory, habit.createdAt),
     longestStreak,
     currentStreak: habit.currentStreak,
-    totalCompletions: habit.streakHistory.length * 3, // Each streak is 3 days
+    totalCompletions,
     startDate: habit.createdAt,
     lastCompletedDate: habit.lastChecked || habit.createdAt
   };
@@ -124,39 +138,43 @@ const calculateOverallStats = (habits: Habit[]): OverallStats => {
   const activeHabits = habits.filter(h => h.status === 'active');
   const completedHabits = habits.filter(h => h.status === 'completed');
   
-  const totalStreaks = habits.reduce((acc, h) => acc + h.totalStreaks, 0);
-  const averageStreak = habits.length ? totalStreaks / habits.length : 0;
-  
-  const habitStats = habits.map(h => ({
+  // Calculate stats for active habits only
+  const habitStats = activeHabits.map(h => ({
     habit: h,
     stats: calculateHabitStats(h)
   }));
   
+  // Find top performing habit based on completion rate and streak length
   const topPerforming = habitStats.reduce((top, current) => {
-    if (!top || current.stats.completionRate > top.stats.completionRate) {
-      return current;
-    }
-    return top;
+    if (!top) return current;
+    const topScore = top.stats.completionRate * (1 + top.stats.currentStreak * 0.1);
+    const currentScore = current.stats.completionRate * (1 + current.stats.currentStreak * 0.1);
+    return currentScore > topScore ? current : top;
   }, null as { habit: Habit; stats: HabitStats } | null);
 
-  // Calculate longest streak across all habits
+  // Calculate sum of current streaks for active habits
+  const totalCurrentStreak = activeHabits.reduce((sum, h) => sum + (h.currentStreak || 0), 0);
+  
+  // Find the longest individual streak
   const longestStreak = Math.max(...habits.map(h => h.longestStreak || 0), 0);
   
-  // Calculate current streak across all habits
-  const currentStreak = Math.max(...habits.map(h => h.currentStreak || 0), 0);
+  // Calculate total completed streaks
+  const streaksCompleted = habits.reduce((sum, h) =>
+    sum + h.streakHistory.filter(s => s.completed).length, 0);
   
-  // Calculate total streaks completed
-  const streaksCompleted = habits.reduce((acc, h) => acc + (h.streaksCompleted || 0), 0);
+  // Calculate average completion rate for active habits
+  const completionRate = activeHabits.length ?
+    habitStats.reduce((sum, h) => sum + h.stats.completionRate, 0) / activeHabits.length : 0;
   
-  // Calculate average completion rate
-  const completionRate = habits.length ?
-    habitStats.reduce((acc, h) => acc + h.stats.completionRate, 0) / habits.length : 0;
-  
+  // Calculate average streak length for active habits
+  const averageStreak = activeHabits.length ?
+    activeHabits.reduce((sum, h) => sum + (h.currentStreak || 0), 0) / activeHabits.length : 0;
+
   return {
     totalHabits: habits.length,
     activeHabits: activeHabits.length,
     completedHabits: completedHabits.length,
-    currentStreak,
+    currentStreak: totalCurrentStreak,
     longestStreak,
     streaksCompleted,
     completionRate,
@@ -515,6 +533,10 @@ export const habitService = {
       const updates: Partial<StoredHabit> = {
         currentStreak: newStatus === 'active' ? 0 : habit.currentStreak,
         status: newStatus,
+        // Set pausedAt when pausing, remove it when activating
+        ...(newStatus === 'paused'
+          ? { pausedAt: formatDateToYYYYMMDD(new Date()) }
+          : { pausedAt: undefined })
       };
 
       if (habit.streakHistory.length > 0) {

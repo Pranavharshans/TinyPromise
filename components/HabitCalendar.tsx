@@ -5,6 +5,11 @@ import { FontAwesome, AntDesign, Entypo } from '@expo/vector-icons';
 import { Habit } from '../types/habit';
 import { Colors, Spacing, Typography } from '../constants/theme';
 
+// Helper function to format date to YYYY-MM-DD
+const formatDateToYYYYMMDD = (date: Date): string => {
+  return date.toISOString().split('T')[0];
+};
+
 interface HabitCalendarProps {
   habit: Habit;
 }
@@ -69,10 +74,29 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
       });
     }
 
+    // If habit is paused, mark all days from pausedAt to today
+    if (habit.status === 'paused' && habit.pausedAt) {
+      const pauseDate = new Date(habit.pausedAt);
+      pauseDate.setHours(0, 0, 0, 0);
+      let currentDate = new Date(pauseDate);
+
+      while (currentDate <= today) {
+        const dateString = formatDateToYYYYMMDD(currentDate);
+        // Only mark as paused if not already marked as completed
+        if (!markedDates[dateString] || markedDates[dateString].type !== 'completed') {
+          markedDates[dateString] = {
+            type: 'paused',
+            marked: true
+          };
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    }
+
     // Mark incomplete days (days before today where there was no check-in)
     let currentDate = new Date(createdAt);
     while (currentDate < today) {
-      const dateString = currentDate.toISOString().split('T')[0];
+      const dateString = formatDateToYYYYMMDD(currentDate);
       if (!markedDates[dateString] && habit.status !== 'paused') {
         markedDates[dateString] = {
           type: 'incomplete',
@@ -85,7 +109,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
     // If there's a lastChecked date and it's not already marked, mark it too
     if (habit.lastChecked && typeof habit.lastChecked === 'string') {
       const lastCheckedDate = new Date(habit.lastChecked);
-      const lastCheckedString = lastCheckedDate.toISOString().split('T')[0];
+      const lastCheckedString = formatDateToYYYYMMDD(lastCheckedDate);
       if (!markedDates[lastCheckedString]) {
         markedDates[lastCheckedString] = {
           type: habit.status === 'paused' ? 'paused' : 'completed',
@@ -96,7 +120,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
 
     // If habit is paused, mark today's date as paused if not already marked
     if (habit.status === 'paused') {
-      const todayString = today.toISOString().split('T')[0];
+      const todayString = formatDateToYYYYMMDD(today);
       if (!markedDates[todayString]) {
         markedDates[todayString] = {
           type: 'paused',
@@ -128,7 +152,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
     for (let i = 0; i < 15; i++) {
       const currentDate = new Date(startDate);
       currentDate.setDate(startDate.getDate() + i);
-      const dateString = currentDate.toISOString().split('T')[0];
+      const dateString = formatDateToYYYYMMDD(currentDate);
       const isToday = currentDate.getTime() === today.getTime();
       const markedDates = getMarkedDates();
       const marking = markedDates[dateString];
@@ -224,7 +248,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
           markedDates={getMarkedDates()}
           dayComponent={({ date }: { date: DateData }) => {
             const marking = getMarkedDates()[date.dateString];
-            const isToday = date.dateString === new Date().toISOString().split('T')[0];
+            const isToday = date.dateString === formatDateToYYYYMMDD(new Date());
             
             return (
               <View style={[

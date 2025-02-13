@@ -20,6 +20,7 @@ export interface Habit {
   status: 'active' | 'paused' | 'completed';
   createdAt: string;
   lastChecked?: string;
+  pausedAt?: string;
   currentStreak: number;
   longestStreak: number;
   streaksCompleted: number;
@@ -54,6 +55,7 @@ export interface UpdateHabitInput {
   description?: string;
   status?: Habit['status'];
   lastChecked?: string;
+  pausedAt?: string;
   currentStreak?: number;
   longestStreak?: number;
   streaksCompleted?: number;
