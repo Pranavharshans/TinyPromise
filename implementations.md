@@ -1,22 +1,26 @@
-# Last Updated: 2/13/2025, 9:55 PM
+# Last Updated: 2/14/2025, 10:25 PM
 
 ## Implemented Features
+
+### Enhanced Habit Status Visualization
+- Date: 2/14/2025
+- Implemented consistent color-coded rings across calendar views:
+  - Red rings: Active habits with missed check-ins
+  - Green rings: Successfully completed habits
+  - Blue rings: Paused habits
+- Updated ring styling with improved visibility
+- Consistent visualization between calendar strip and expanded view
+- Optimized opacity and scaling for better visual hierarchy
 
 ### Paused Habit Visualization
 - Date: 2/13/2025
 - Added pausedAt field to track when habits are paused
-- Shows blue rings in the calendar from pause date to current date
-- Respects completed dates (doesn't show blue ring if the date was completed)
-- Updates streak UI to better visualize paused state
-
-## Planned Features
-
-(Add any planned features here)
-# TinyPromise Implementation Log
-
-Last Updated: 2025-02-11 12:02 PM IST
-
-## Implemented Features
+- Shows blue rings in both week strip and expanded calendar
+- Properly handles pause dates:
+  - If habit is paused on a completed day, blue rings start from next day
+  - Shows blue rings from pause date up to current date
+  - Completed dates remain marked as completed (no blue ring)
+- Updated UI to consistently show paused state across all views
 
 ### Statistics Screen (2025-02-11)
 - Enhanced statistics visualization with Victory Native charts and animations

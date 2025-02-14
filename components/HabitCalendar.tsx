@@ -29,6 +29,8 @@ interface Styles {
   todayText: TextStyle;
   completedDay: ViewStyle;
   completedText: TextStyle;
+  pausedDay: ViewStyle;
+  pausedText: TextStyle;
   missedText: TextStyle;
   activeText: TextStyle;
   expandButton: ViewStyle;
@@ -58,72 +60,135 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
   };
 
   const getMarkedDates = () => {
+    console.log("========================");
+    console.log("getMarkedDates: Starting marking process");
+    console.log("Habit state:", {
+      id: habit.id,
+      title: habit.title,
+      status: habit.status,
+      pausedAt: habit.pausedAt,
+      lastChecked: habit.lastChecked,
+      checkInHistory: habit.checkInHistory || []
+    });
+
     const markedDates: Record<string, any> = {};
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const createdAt = new Date(habit.createdAt);
     createdAt.setHours(0, 0, 0, 0);
 
-    // Process check-in history
-    if (habit.checkInHistory && habit.checkInHistory.length > 0) {
-      habit.checkInHistory.forEach(dateString => {
-        markedDates[dateString] = {
-          type: 'completed',
-          marked: true
-        };
-      });
-    }
+    console.log("=================== START ===================");
+    console.log("Habit Details:", {
+      id: habit.id,
+      title: habit.title,
+      status: habit.status,
+      pausedAt: habit.pausedAt
+    });
 
-    // If habit is paused, mark all days from pausedAt to today
+    // Mark completed dates first
+    const completedDates = new Set(habit.checkInHistory || []);
+    completedDates.forEach(dateString => {
+      markedDates[dateString] = {
+        type: 'completed',
+        marked: true
+      };
+    });
+
+    // Handle paused state
     if (habit.status === 'paused' && habit.pausedAt) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
       const pauseDate = new Date(habit.pausedAt);
       pauseDate.setHours(0, 0, 0, 0);
-      let currentDate = new Date(pauseDate);
 
+      console.log("Pause Details:", {
+        pauseDate: formatDateToYYYYMMDD(pauseDate),
+        today: formatDateToYYYYMMDD(today),
+        completedDates: Array.from(completedDates)
+      });
+
+      let currentDate = new Date(pauseDate);
       while (currentDate <= today) {
         const dateString = formatDateToYYYYMMDD(currentDate);
-        // Only mark as paused if not already marked as completed
-        if (!markedDates[dateString] || markedDates[dateString].type !== 'completed') {
+        // Don't mark completed dates as paused
+        if (!completedDates.has(dateString)) {
           markedDates[dateString] = {
             type: 'paused',
-            marked: true
+            marked: true,
+            // Add selected property to make it more visible
+            selected: true,
+            selectedColor: Colors.habitState.paused.default
           };
+          console.log("Marked as paused:", dateString);
+        } else {
+          console.log("Skipping completed date:", dateString);
         }
         currentDate.setDate(currentDate.getDate() + 1);
       }
     }
 
+    console.log("Processed pause dates. Status:", {
+      status: habit.status,
+      pausedAt: habit.pausedAt,
+      markedDatesCount: Object.keys(markedDates).length,
+      pausedDatesCount: Object.values(markedDates).filter(m => m.type === 'paused').length
+    });
+
+    console.log("Final Markings:", Object.entries(markedDates).map(([date, value]) => ({
+      date,
+      type: value.type
+    })));
+    console.log("=================== END ===================");
+
+    // Mark completed dates (these will override any paused markings)
+    completedDates.forEach(dateString => {
+      markedDates[dateString] = {
+        type: 'completed',
+        marked: true
+      };
+    });
+
+    console.log("Final markings:", {
+      habit: habit.id,
+      status: habit.status,
+      pausedAt: habit.pausedAt,
+      markings: Object.keys(markedDates).map(date => ({
+        date,
+        type: markedDates[date].type
+      }))
+    });
+
     // Mark incomplete days (days before today where there was no check-in)
-    let currentDate = new Date(createdAt);
-    while (currentDate < today) {
-      const dateString = formatDateToYYYYMMDD(currentDate);
-      if (!markedDates[dateString] && habit.status !== 'paused') {
-        markedDates[dateString] = {
-          type: 'incomplete',
-          marked: true
-        };
+      let currentDate = new Date(createdAt);
+      while (currentDate < today) {
+        const dateString = formatDateToYYYYMMDD(currentDate);
+        if (!markedDates[dateString]) {
+          if (habit.status === 'active') {
+            // Only show red rings for active habits that were missed
+            markedDates[dateString] = {
+              type: 'incomplete',
+              marked: true
+            };
+          } else if (habit.status === 'paused' && habit.pausedAt && new Date(dateString) >= new Date(habit.pausedAt)) {
+            // Show blue rings for paused habits after the pause date
+            markedDates[dateString] = {
+              type: 'paused',
+              marked: true
+            };
+          }
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
       }
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
 
     // If there's a lastChecked date and it's not already marked, mark it too
     if (habit.lastChecked && typeof habit.lastChecked === 'string') {
       const lastCheckedDate = new Date(habit.lastChecked);
       const lastCheckedString = formatDateToYYYYMMDD(lastCheckedDate);
-      if (!markedDates[lastCheckedString]) {
+      // Only mark lastChecked as completed if it's not already marked
+      // and it was actually completed (exists in checkInHistory)
+      if (!markedDates[lastCheckedString] && habit.checkInHistory?.includes(lastCheckedString)) {
         markedDates[lastCheckedString] = {
-          type: habit.status === 'paused' ? 'paused' : 'completed',
-          marked: true
-        };
-      }
-    }
-
-    // If habit is paused, mark today's date as paused if not already marked
-    if (habit.status === 'paused') {
-      const todayString = formatDateToYYYYMMDD(today);
-      if (!markedDates[todayString]) {
-        markedDates[todayString] = {
-          type: 'paused',
+          type: 'completed',
           marked: true
         };
       }
@@ -136,6 +201,10 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
     const dates = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    
+    // Get marked dates once for all days
+    const markedDates = getMarkedDates();
+    console.log("All marked dates for week strip:", markedDates);
     
     // Generate dates centered around today (7 days before, 7 days after)
     const startDate = new Date(today);
@@ -154,21 +223,47 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
       currentDate.setDate(startDate.getDate() + i);
       const dateString = formatDateToYYYYMMDD(currentDate);
       const isToday = currentDate.getTime() === today.getTime();
-      const markedDates = getMarkedDates();
       const marking = markedDates[dateString];
 
+      console.log("Week strip date marking:", {
+        date: dateString,
+        marking,
+        isToday,
+        habitStatus: habit.status,
+        habitPausedAt: habit.pausedAt
+      });
+
       const isCompleted = marking?.type === 'completed';
+      const isPaused = marking?.type === 'paused';
       const dayStyle = [
         styles.weekDay,
         isCompleted && styles.completedDay,
+        isPaused && {
+          ...styles.pausedDay,
+          backgroundColor: `${Colors.habitState.paused.default}15`, // Light blue background
+          borderWidth: 2,
+          borderColor: Colors.habitState.paused.default
+        },
         isToday && styles.todayDay
       ];
 
       const textStyle = [
         styles.dayText,
         isToday && styles.todayText,
-        isCompleted && styles.completedText
+        isCompleted && styles.completedText,
+        isPaused && {
+          ...styles.pausedText,
+          color: Colors.habitState.paused.default,
+          fontWeight: "700" as const // TypeScript needs const assertion for font weight
+        }
       ];
+
+      console.log("Rendering cell:", {
+        date: dateString,
+        isCompleted,
+        isPaused,
+        marking: marking?.type
+      });
 
       console.log('Rendering date:', dateString, { isCompleted, marking }); // Debug log
 
@@ -185,15 +280,28 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
                     name="circle"
                     size={32}
                     color={
-                      marking.type === 'completed'
-                        ? Colors.success.default
-                        : marking.type === 'paused'
-                        ? Colors.habitState.paused.default
-                        : marking.type === 'incomplete'
-                        ? Colors.danger.default
-                        : Colors.gray[400]
-                    }
-                    style={{ opacity: 0.9 }}
+                       marking.type === 'completed'
+                         ? Colors.success.default
+                         : marking.type === 'paused'
+                         ? Colors.habitState.paused.default
+                         : marking.type === 'incomplete'
+                         ? Colors.danger.default
+                         : Colors.gray[400]
+                     }
+                     style={[
+                       marking.type === 'completed' && {
+                         opacity: 0.85,
+                         transform: [{ scale: 1.1 }]
+                       },
+                       marking.type === 'paused' && {
+                         transform: [{ scale: 1.2 }],
+                         opacity: 0.75
+                       },
+                       marking.type === 'incomplete' && {
+                         opacity: 0.7,
+                         transform: [{ scale: 1.15 }]
+                       }
+                     ]}
                   />
                 </View>
               )}
@@ -254,13 +362,24 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
               <View style={[
                 styles.calendarDay,
                 marking?.type === 'completed' && styles.completedDay,
+                marking?.type === 'paused' && {
+                  ...styles.pausedDay,
+                  backgroundColor: `${Colors.habitState.paused.default}15`,
+                  borderWidth: 2,
+                  borderColor: Colors.habitState.paused.default
+                },
                 isToday && styles.todayDay
               ]}>
                 <View style={styles.stackContainer}>
                   <Text style={[
                     styles.dayText,
                     isToday && styles.todayText,
-                    marking?.type === 'completed' && styles.completedText
+                    marking?.type === 'completed' && styles.completedText,
+                    marking?.type === 'paused' && {
+                      ...styles.pausedText,
+                      color: Colors.habitState.paused.default,
+                      fontWeight: "700" as const
+                    }
                   ]}>
                     {date.day}
                   </Text>
@@ -278,7 +397,20 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
                             ? Colors.danger.default
                             : Colors.gray[400]
                         }
-                        style={{ opacity: 0.9 }}
+                        style={[
+                          marking.type === 'completed' && {
+                            opacity: 0.85,
+                            transform: [{ scale: 1.1 }]
+                          },
+                          marking.type === 'paused' && {
+                            transform: [{ scale: 1.2 }],
+                            opacity: 0.75
+                          },
+                          marking.type === 'incomplete' && {
+                            opacity: 0.7,
+                            transform: [{ scale: 1.15 }]
+                          }
+                        ]}
                       />
                     </View>
                   )}
@@ -392,6 +524,34 @@ const styles = StyleSheet.create<Styles>({
     color: Colors.text.calendar,
     fontWeight: '700',
     opacity: 0.7,
+  },
+  pausedDay: {
+    borderColor: Colors.habitState.paused.default,
+    borderWidth: 2.5,
+    backgroundColor: `${Colors.habitState.paused.default}20`,
+    padding: 2,
+    borderRadius: 24,
+    shadowColor: Colors.habitState.paused.default,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
+    // Add a subtle inner shadow for more depth
+    borderStyle: 'solid',
+    position: 'relative',
+    overflow: 'visible',
+  },
+  pausedText: {
+    color: Colors.habitState.paused.default,
+    fontWeight: '700',
+    opacity: 0.85,
+    fontSize: 17, // Slightly larger for better visibility
+    textShadowColor: Colors.habitState.paused.default,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 2,
   },
   missedText: {
     color: Colors.danger.dark,

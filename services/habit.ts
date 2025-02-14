@@ -517,7 +517,11 @@ export const habitService = {
    */
   async handleStreakDecision(habitId: string, newStatus: Habit['status'], userId: string): Promise<void> {
     try {
-      console.log('[HabitService] Handling streak decision:', { habitId, newStatus });
+      console.log('[HabitService] Handling streak decision:', {
+        habitId,
+        newStatus,
+        currentTime: new Date().toISOString()
+      });
       
       if (!habitId) throw new Error('Habit ID is required');
       if (!userId) throw new Error('User ID is required');
@@ -530,14 +534,35 @@ export const habitService = {
         throw new Error('Habit not found');
       }
 
+      console.log('[HabitService] Current habit state:', {
+        id: habit.id,
+        status: habit.status,
+        pausedAt: habit.pausedAt,
+        lastChecked: habit.lastChecked
+      });
+
+      const now = new Date();
+      const todayString = formatDateToYYYYMMDD(now);
+
+      let updatedStreak = habit.currentStreak;
+      let pausedAt = undefined;
+
+      if (newStatus === 'paused') {
+        pausedAt = todayString;
+      } else if (newStatus === 'active') {
+        updatedStreak = 0;
+      }
+
       const updates: Partial<StoredHabit> = {
-        currentStreak: newStatus === 'active' ? 0 : habit.currentStreak,
+        currentStreak: updatedStreak,
         status: newStatus,
-        // Set pausedAt when pausing, remove it when activating
-        ...(newStatus === 'paused'
-          ? { pausedAt: formatDateToYYYYMMDD(new Date()) }
-          : { pausedAt: undefined })
+        pausedAt
       };
+
+      console.log('[HabitService] Updating habit with:', {
+        ...updates,
+        currentDate: todayString
+      });
 
       if (habit.streakHistory.length > 0) {
         const lastStreak = [...habit.streakHistory];
@@ -554,15 +579,39 @@ export const habitService = {
         };
       }
 
-      // Update local first
-      await habitStorage.updateHabit(userId, {
-        ...habit,
+      // Prepare final updates with explicit pause handling
+      const finalUpdates = {
         ...updates,
+        status: newStatus,
+        pausedAt: newStatus === 'paused' ? todayString : undefined,
+        currentStreak: updatedStreak
+      };
+
+      console.log('[HabitService] Final updates:', {
+        ...finalUpdates,
+        currentDate: todayString,
+        operation: newStatus === 'paused' ? 'PAUSING' : 'ACTIVATING'
       });
 
-      // Then update Firebase
-      await updateDoc(doc(db, HABITS_COLLECTION, habitId), updates);
-      console.log('[HabitService] Streak decision processed');
+      // Update local first with complete habit data
+      const updatedHabit = {
+        ...habit,
+        ...finalUpdates,
+      };
+
+      // Save to local storage
+      console.log('[HabitService] Saving to local storage:', {
+        id: updatedHabit.id,
+        status: updatedHabit.status,
+        pausedAt: updatedHabit.pausedAt,
+        currentStreak: updatedHabit.currentStreak
+      });
+      await habitStorage.updateHabit(userId, updatedHabit);
+
+      // Update Firebase with explicit updates
+      console.log('[HabitService] Updating Firebase...');
+      await updateDoc(doc(db, HABITS_COLLECTION, habitId), finalUpdates);
+      console.log('[HabitService] Successfully processed streak decision:', newStatus);
     } catch (error) {
       if (error instanceof FirestoreError || error instanceof FirebaseError) {
         handleFirestoreError(error, 'Handle streak decision');
