@@ -1,6 +1,16 @@
-# Last Updated: 2/14/2025, 10:25 PM
+# Last Updated: 2/15/2025, 8:16 PM
 
 ## Implemented Features
+
+### Enhanced Habit Status Ring Visibility
+- Date: 2/15/2025
+- Improved visibility of status rings in calendar views:
+  - Blue rings: Made more prominent for paused habits (scale: 1.25, opacity: 0.9)
+  - Green rings: Clear indication for completed habits (scale: 1.1, opacity: 0.9)
+  - Red rings: Distinct marking for missed check-ins (scale: 1.15, opacity: 0.8)
+- Ensured consistent styling between calendar strip and expanded calendar view
+- Enhanced visual feedback for paused habits in both views
+- Fixed paused habit status to properly show blue rings in paused tab
 
 ### Enhanced Habit Status Visualization
 - Date: 2/14/2025
