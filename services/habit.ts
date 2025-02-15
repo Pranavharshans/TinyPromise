@@ -579,13 +579,24 @@ export const habitService = {
         };
       }
 
-      // Prepare final updates with explicit pause handling
-      const finalUpdates = {
-        ...updates,
+      // Prepare final updates without undefined values
+      const finalUpdates: Record<string, any> = {
         status: newStatus,
-        pausedAt: newStatus === 'paused' ? todayString : undefined,
         currentStreak: updatedStreak
       };
+
+      // Only include pausedAt when pausing
+      if (newStatus === 'paused') {
+        finalUpdates.pausedAt = todayString;
+      }
+
+      // Include any other valid updates
+      if (updates.reminder) {
+        finalUpdates.reminder = updates.reminder;
+      }
+      if (updates.streakHistory) {
+        finalUpdates.streakHistory = updates.streakHistory;
+      }
 
       console.log('[HabitService] Final updates:', {
         ...finalUpdates,
