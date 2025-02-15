@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
-  ScrollView,
   StyleSheet,
   SafeAreaView,
   StatusBar,
@@ -13,6 +12,8 @@ import StreakStats from '../../components/statistics/StreakStats';
 import CompletionRate from '../../components/statistics/CompletionRate';
 import OverallProgress from '../../components/statistics/OverallProgress';
 import CompletionTrends from '../../components/statistics/CompletionTrends';
+import DateRangeFilter from '../../components/statistics/DateRangeFilter';
+import MetricCard from '../../components/statistics/MetricCard';
 import { useHabits } from '../../contexts/habit';
 import { useStats } from '../../contexts/stats';
 import { HabitStreak } from '../../types/habit';
@@ -24,15 +25,17 @@ import Animated, {
   useAnimatedStyle,
 } from 'react-native-reanimated';
 
+type DateRange = '7d' | '14d' | '30d' | '90d';
+
 export default function StatisticsScreen() {
   const { activeHabits } = useHabits();
   const { overallStats } = useStats();
   const scrollY = useSharedValue(0);
+  const [selectedRange, setSelectedRange] = useState<DateRange>('14d');
 
   const combinedStreakHistory = React.useMemo(() => {
-    if (!activeHabits?.length) return [];
+    if (!activeHabits?.length) return [] as HabitStreak[];
 
-    // Get all unique dates
     const allDates = new Set<string>();
     activeHabits.forEach(habit => {
       habit.streakHistory.forEach(streak => {
@@ -47,7 +50,6 @@ export default function StatisticsScreen() {
       });
     });
 
-    // Convert to streak format
     const streaks: HabitStreak[] = [];
     Array.from(allDates).sort().forEach(date => {
       const isCompleted = activeHabits.some(habit =>
@@ -59,12 +61,10 @@ export default function StatisticsScreen() {
       );
 
       if (isCompleted) {
-        // If this date continues a streak, extend it
         const lastStreak = streaks[streaks.length - 1];
         if (lastStreak && new Date(date) <= new Date(lastStreak.endDate)) {
           lastStreak.endDate = date;
         } else {
-          // Start a new streak
           streaks.push({
             startDate: date,
             endDate: date,
@@ -74,7 +74,6 @@ export default function StatisticsScreen() {
       }
     });
 
-    console.log('Combined streak history:', streaks);
     return streaks;
   }, [activeHabits]);
 
@@ -103,6 +102,16 @@ export default function StatisticsScreen() {
     };
   });
 
+  const getDaysFromRange = (range: DateRange): number => {
+    switch (range) {
+      case '7d': return 7;
+      case '14d': return 14;
+      case '30d': return 30;
+      case '90d': return 90;
+      default: return 14;
+    }
+  };
+
   if (!activeHabits?.length) {
     return (
       <SafeAreaView style={styles.container}>
@@ -122,8 +131,6 @@ export default function StatisticsScreen() {
         backgroundColor={Colors.background.primary}
       />
 
-      <View style={styles.headerBackground} />
-
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
         style={styles.scrollView}
@@ -132,9 +139,9 @@ export default function StatisticsScreen() {
         scrollEventThrottle={16}
       >
         <Animated.View style={[styles.headerSection, headerStyle]}>
-          <Text style={styles.statisticsTitle}>My Progress</Text>
+          <Text style={styles.statisticsTitle}>Statistics</Text>
           <Text style={styles.statisticsSubtitle}>
-            Keep track of your habit-building journey
+            Track your progress and achievements
           </Text>
         </Animated.View>
 
@@ -143,44 +150,43 @@ export default function StatisticsScreen() {
           entering={FadeInUp.delay(200).springify()}
           style={styles.section}
         >
-          <Text style={styles.sectionTitle}>Overall Summary</Text>
-          <View style={styles.summaryCard}>
-            <OverallProgress />
+          <Text style={styles.sectionTitle}>Overview</Text>
+          <View style={styles.metricsContainer}>
+            <MetricCard
+              value={`${overallStats.completionRate.toFixed(1)}%`}
+              label="Completion"
+              tooltipText="Your overall habit completion rate"
+              icon="bar-chart-outline"
+            />
+            <MetricCard
+              value={overallStats.currentStreak}
+              label="Current Streak"
+              tooltipText="Days in a row you've completed habits"
+              icon="flame-outline"
+            />
+            <MetricCard
+              value={overallStats.longestStreak}
+              label="Best Streak"
+              tooltipText="Your best streak ever"
+              icon="trophy-outline"
+            />
           </View>
         </Animated.View>
 
-        {/* Activity Overview Section */}
+        {/* Trends Section */}
         <Animated.View 
           entering={FadeInUp.delay(400).springify()}
           style={styles.section}
         >
-          <Text style={styles.sectionTitle}>Activity Overview</Text>
-          <View style={styles.metricsContainer}>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>
-                {overallStats.completionRate.toFixed(1)}%
-              </Text>
-              <Text style={styles.metricLabel}>Average Completion</Text>
-            </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>
-                {overallStats.currentStreak}
-              </Text>
-              <Text style={styles.metricLabel}>Current Streak</Text>
-            </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>
-                {overallStats.longestStreak}
-              </Text>
-              <Text style={styles.metricLabel}>Longest Streak</Text>
-            </View>
-          </View>
-
-          {/* Completion Trends Chart */}
-          <View style={styles.trendsSection}>
+          <Text style={styles.sectionTitle}>Activity Trends</Text>
+          <DateRangeFilter
+            selectedRange={selectedRange}
+            onRangeChange={setSelectedRange}
+          />
+          <View style={styles.trendsCard}>
             <CompletionTrends
               streakHistory={combinedStreakHistory}
-              days={14} // Show last 2 weeks for a more focused view
+              days={getDaysFromRange(selectedRange)}
             />
           </View>
         </Animated.View>
@@ -190,7 +196,7 @@ export default function StatisticsScreen() {
           entering={FadeInUp.delay(600).springify()}
           style={styles.section}
         >
-          <Text style={styles.sectionTitle}>Habit Performance</Text>
+          <Text style={styles.sectionTitle}>Habit Details</Text>
           <View style={styles.habitsContainer}>
             {activeHabits.map((habit, index) => (
               <Animated.View 
@@ -214,24 +220,6 @@ export default function StatisticsScreen() {
             ))}
           </View>
         </Animated.View>
-
-        {/* Best Performing Section */}
-        {overallStats.topPerformingHabit && (
-          <Animated.View 
-            entering={FadeInUp.delay(800).springify()}
-            style={styles.section}
-          >
-            <Text style={styles.sectionTitle}>Top Performance</Text>
-            <View style={styles.topHabitCard}>
-              <Text style={styles.topHabitTitle}>
-                Best Performing Habit
-              </Text>
-              <Text style={styles.topHabitName}>
-                {overallStats.topPerformingHabit}
-              </Text>
-            </View>
-          </Animated.View>
-        )}
       </Animated.ScrollView>
     </SafeAreaView>
   );
@@ -242,15 +230,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background.primary,
   },
-  headerBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 200,
-    backgroundColor: Colors.primary.light,
-    opacity: 0.05,
-  },
   scrollView: {
     flex: 1,
   },
@@ -260,7 +239,6 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     marginBottom: Spacing.xl,
-    paddingTop: Spacing.lg,
   },
   statisticsTitle: {
     fontSize: Typography.sizes.xxl,
@@ -282,69 +260,48 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     marginBottom: Spacing.md,
   },
-  summaryCard: {
-    backgroundColor: Colors.background.secondary,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-  },
   metricsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.md,
     justifyContent: 'space-between',
   },
-  metricCard: {
-    width: '31%',
-    backgroundColor: Colors.background.secondary,
+  trendsCard: {
+    backgroundColor: Colors.background.primary,
     borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 110,
+    borderWidth: 1,
+    borderColor: Colors.background.secondary,
+    overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: Colors.primary.default,
-        shadowOffset: { width: 0, height: 4 },
+        shadowColor: Colors.text.primary,
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 4,
+        elevation: 2,
       },
     }),
   },
-  metricValue: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
-    color: Colors.primary.default,
-    marginBottom: Spacing.xs,
-  },
-  metricLabel: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.text.secondary,
-    textAlign: 'center',
-  },
-  trendsSection: {
-    marginTop: Spacing.xl,
-  },
   habitsContainer: {
     gap: Spacing.md,
-    marginTop: Spacing.sm,
   },
   habitCard: {
-    backgroundColor: Colors.background.secondary,
+    backgroundColor: Colors.background.primary,
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
-    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.background.secondary,
     ...Platform.select({
       ios: {
-        shadowColor: Colors.primary.default,
-        shadowOffset: { width: 0, height: 4 },
+        shadowColor: Colors.text.primary,
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 4,
+        elevation: 2,
       },
     }),
   },
@@ -373,38 +330,6 @@ const styles = StyleSheet.create({
   habitStats: {
     flexDirection: 'row',
     gap: Spacing.md,
-  },
-  topHabitCard: {
-    backgroundColor: Colors.primary.light,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.xl,
-    alignItems: 'center',
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: Colors.primary.default,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
-  },
-  topHabitTitle: {
-    fontSize: Typography.sizes.sm,
-    color: Colors.text.primary,
-    marginBottom: Spacing.sm,
-    fontWeight: Typography.weights.medium,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  topHabitName: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.bold,
-    color: Colors.primary.default,
-    textAlign: 'center',
   },
   emptyState: {
     flex: 1,
