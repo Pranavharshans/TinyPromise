@@ -102,8 +102,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
             marked: true,
             // Enhanced visibility for paused state
             selected: true,
-            selectedColor: Colors.habitState.paused.default,
-            selectedTextColor: Colors.habitState.paused.default,
+            selectedColor: Colors.habitState.paused.default
           };
         }
         currentDate.setDate(currentDate.getDate() + 1);
@@ -251,12 +250,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
       const dayStyle = [
         styles.weekDay,
         isCompleted && styles.completedDay,
-        isPaused && {
-          ...styles.pausedDay,
-          backgroundColor: `${Colors.habitState.paused.default}15`, // Light blue background
-          borderWidth: 2,
-          borderColor: Colors.habitState.paused.default
-        },
+        isPaused && styles.pausedDay,
         isToday && styles.todayDay
       ];
 
@@ -264,11 +258,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
         styles.dayText,
         isToday && styles.todayText,
         isCompleted && styles.completedText,
-        isPaused && {
-          ...styles.pausedText,
-          color: Colors.habitState.paused.default,
-          fontWeight: "700" as const // TypeScript needs const assertion for font weight
-        }
+        isPaused && styles.pausedText
       ];
 
       console.log("Rendering cell:", {
@@ -307,8 +297,8 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
                          transform: [{ scale: 1.1 }]
                        },
                        marking.type === 'paused' && {
-                         transform: [{ scale: 1.25 }],
-                         opacity: 0.9
+                         transform: [{ scale: 1.1 }],
+                         opacity: 0.85
                        },
                        marking.type === 'incomplete' && {
                          opacity: 0.8,
@@ -375,12 +365,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
               <View style={[
                 styles.calendarDay,
                 marking?.type === 'completed' && styles.completedDay,
-                marking?.type === 'paused' && {
-                  ...styles.pausedDay,
-                  backgroundColor: `${Colors.habitState.paused.default}15`,
-                  borderWidth: 2,
-                  borderColor: Colors.habitState.paused.default
-                },
+                marking?.type === 'paused' && styles.pausedDay,
                 isToday && styles.todayDay
               ]}>
                 <View style={styles.stackContainer}>
@@ -388,11 +373,7 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
                     styles.dayText,
                     isToday && styles.todayText,
                     marking?.type === 'completed' && styles.completedText,
-                    marking?.type === 'paused' && {
-                      ...styles.pausedText,
-                      color: Colors.habitState.paused.default,
-                      fontWeight: "700" as const
-                    }
+                    marking?.type === 'paused' && styles.pausedText
                   ]}>
                     {date.day}
                   </Text>
@@ -416,8 +397,8 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
                             transform: [{ scale: 1.1 }]
                           },
                           marking.type === 'paused' && {
-                            transform: [{ scale: 1.25 }],
-                            opacity: 0.9
+                            transform: [{ scale: 1.1 }],
+                            opacity: 0.85
                           },
                           marking.type === 'incomplete' && {
                             opacity: 0.8,
@@ -539,32 +520,11 @@ const styles = StyleSheet.create<Styles>({
     opacity: 0.7,
   },
   pausedDay: {
-    borderColor: Colors.habitState.paused.default,
-    borderWidth: 2.5,
-    backgroundColor: `${Colors.habitState.paused.default}20`,
-    padding: 2,
-    borderRadius: 24,
-    shadowColor: Colors.habitState.paused.default,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 4,
-    // Add a subtle inner shadow for more depth
-    borderStyle: 'solid',
     position: 'relative',
-    overflow: 'visible',
   },
   pausedText: {
-    color: Colors.habitState.paused.default,
-    fontWeight: '700',
-    opacity: 0.85,
-    fontSize: 17, // Slightly larger for better visibility
-    textShadowColor: Colors.habitState.paused.default,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 2,
+    color: Colors.text.calendar,
+    fontWeight: '600',
   },
   missedText: {
     color: Colors.danger.dark,
