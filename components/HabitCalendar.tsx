@@ -132,13 +132,17 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
     })));
     console.log("=================== END ===================");
 
-    // Mark completed dates (these will override any paused markings)
-    completedDates.forEach(dateString => {
-      markedDates[dateString] = {
-        type: 'completed',
-        marked: true
-      };
-    });
+    // For active habits, mark completed dates with a green ring
+    if (habit.status === 'active') {
+      completedDates.forEach(dateString => {
+        markedDates[dateString] = {
+          type: 'completed',
+          marked: true,
+          selected: true,
+          selectedColor: Colors.success.default
+        };
+      });
+    }
 
     console.log("Final markings:", {
       habit: habit.id,
@@ -494,7 +498,9 @@ const styles = StyleSheet.create<Styles>({
     shadowRadius: 3,
     elevation: 3,
   },
-  completedDay: {},
+  completedDay: {
+    position: 'relative'
+  },
   dateContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -516,8 +522,7 @@ const styles = StyleSheet.create<Styles>({
   },
   completedText: {
     color: Colors.text.calendar,
-    fontWeight: '700',
-    opacity: 0.7,
+    fontWeight: '600'
   },
   pausedDay: {
     position: 'relative',
