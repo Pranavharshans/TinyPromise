@@ -87,7 +87,32 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
 
     const completedDates = new Set(habit.checkInHistory || []);
     
-    // If habit is paused, mark all dates since pause date as paused first
+    // First, mark all incomplete days from creation up to today
+    let currentDate = new Date(createdAt);
+    while (currentDate < today) {
+      const dateString = formatDateToYYYYMMDD(currentDate);
+      if (!completedDates.has(dateString)) {
+        markedDates[dateString] = {
+          type: 'incomplete',
+          marked: true,
+          selected: true,
+          selectedColor: Colors.danger.default
+        };
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Then mark completed dates (these will override incomplete markings)
+    completedDates.forEach(dateString => {
+      markedDates[dateString] = {
+        type: 'completed',
+        marked: true,
+        selected: true,
+        selectedColor: Colors.success.default
+      };
+    });
+
+    // Finally, for paused habits, mark future dates as paused
     if (habit.status === 'paused' && habit.pausedAt) {
       const pauseDate = new Date(habit.pausedAt);
       pauseDate.setHours(0, 0, 0, 0);
@@ -95,12 +120,12 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
       
       while (currentDate <= today) {
         const dateString = formatDateToYYYYMMDD(currentDate);
-        // Always mark as paused unless it's a completed date
-        if (!completedDates.has(dateString)) {
+        // Only mark as paused if it's not already marked as completed
+        // and it's a future date (after pause date)
+        if (!completedDates.has(dateString) && currentDate >= pauseDate) {
           markedDates[dateString] = {
             type: 'paused',
             marked: true,
-            // Enhanced visibility for paused state
             selected: true,
             selectedColor: Colors.habitState.paused.default
           };
@@ -109,72 +134,14 @@ const HabitCalendar: React.FC<HabitCalendarProps> = ({ habit }) => {
       }
     }
 
-    // Then mark completed dates (these will override any paused markings)
-    completedDates.forEach(dateString => {
-      markedDates[dateString] = {
-        type: 'completed',
-        marked: true,
-        selected: true,
-        selectedColor: Colors.success.default,
-      };
-    });
-
-    console.log("Processed pause dates. Status:", {
+    console.log("Processed dates. Status:", {
       status: habit.status,
       pausedAt: habit.pausedAt,
       markedDatesCount: Object.keys(markedDates).length,
-      pausedDatesCount: Object.values(markedDates).filter(m => m.type === 'paused').length
+      pausedDatesCount: Object.values(markedDates).filter(m => m.type === 'paused').length,
+      completedDatesCount: Object.values(markedDates).filter(m => m.type === 'completed').length,
+      incompleteDatesCount: Object.values(markedDates).filter(m => m.type === 'incomplete').length
     });
-
-    console.log("Final Markings:", Object.entries(markedDates).map(([date, value]) => ({
-      date,
-      type: value.type
-    })));
-    console.log("=================== END ===================");
-
-    // For active habits, mark completed dates with a green ring
-    if (habit.status === 'active') {
-      completedDates.forEach(dateString => {
-        markedDates[dateString] = {
-          type: 'completed',
-          marked: true,
-          selected: true,
-          selectedColor: Colors.success.default
-        };
-      });
-    }
-
-    console.log("Final markings:", {
-      habit: habit.id,
-      status: habit.status,
-      pausedAt: habit.pausedAt,
-      markings: Object.keys(markedDates).map(date => ({
-        date,
-        type: markedDates[date].type
-      }))
-    });
-
-    // Mark incomplete days (days before today where there was no check-in)
-      let currentDate = new Date(createdAt);
-      while (currentDate < today) {
-        const dateString = formatDateToYYYYMMDD(currentDate);
-        if (!markedDates[dateString]) {
-          if (habit.status === 'active') {
-            // Only show red rings for active habits that were missed
-            markedDates[dateString] = {
-              type: 'incomplete',
-              marked: true
-            };
-          } else if (habit.status === 'paused' && habit.pausedAt && new Date(dateString) >= new Date(habit.pausedAt)) {
-            // Show blue rings for paused habits after the pause date
-            markedDates[dateString] = {
-              type: 'paused',
-              marked: true
-            };
-          }
-        }
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
 
     // Mark lastChecked date if needed
     if (habit.lastChecked && typeof habit.lastChecked === 'string') {
