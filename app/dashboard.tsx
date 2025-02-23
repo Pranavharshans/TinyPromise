@@ -109,15 +109,6 @@ export default function DashboardScreen() {
     );
   };
 
-  const renderHabitItem = (habit: Habit, index: number) => (
-    <HabitCard
-      key={habit.id}
-      habit={habit}
-      onCheckIn={() => handleCheckIn(habit.id)}
-      index={index}
-    />
-  );
-
   if (error) {
     return (
       <SafeAreaView style={styles.container}>
@@ -179,7 +170,14 @@ export default function DashboardScreen() {
               style={styles.filterChips}
             />
             {filteredHabits.length > 0 ? (
-              filteredHabits.map((habit, index) => renderHabitItem(habit, index))
+              filteredHabits.map((habit, index) => (
+                <HabitCard
+                  key={habit.id}
+                  habit={habit}
+                  onCheckIn={() => handleCheckIn(habit.id)}
+                  index={index}
+                />
+              ))
             ) : (
               <View style={styles.emptyFilterState}>
                 <Text style={styles.emptyFilterText}>
