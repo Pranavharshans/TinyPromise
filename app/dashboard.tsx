@@ -74,13 +74,13 @@ export default function DashboardScreen() {
           'You\'ve completed a 3-day streak! Would you like to continue this habit?',
           [
             {
-              text: 'Complete Habit',
-              style: 'destructive',
-              onPress: () => updateHabitStatus(habitId, 'completed')
-            },
-            {
               text: 'Keep Going',
               onPress: () => updateHabitStatus(habitId, 'active')
+            },
+            {
+              text: 'Quit',
+              style: 'destructive',
+              onPress: () => updateHabitStatus(habitId, 'completed')
             }
           ]
         );
