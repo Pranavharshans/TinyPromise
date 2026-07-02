@@ -1,50 +1,56 @@
-# Welcome to your Expo app 👋
+# TinyPromise
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A habit-building mobile app focused on **3-day streaks**. Build habits through short, achievable commitments and decide after each streak whether to continue or move on.
 
-## Get started
+## Concept
 
-1. Install dependencies
+Instead of overwhelming users with indefinite goals, TinyPromise focuses on 3-day streaks. After completing a streak, the user decides: **"Quit or Keep Going?"** — making habit formation intentional and pressure-free.
 
-   ```bash
-   npm install
-   ```
+## Features
 
-2. Start the app
+- **3-Day Streaks** — Short, achievable habit commitments with progress indicators
+- **Smart Reminders** — Customizable daily push notifications
+- **Progress Dashboard** — Streak visualization with celebratory animations
+- **Light Gamification** — Achievement badges for milestones
+- **Guest Mode** — Start without an account; optional sync with authentication
 
-   ```bash
-    npx expo start
-   ```
+## Tech Stack
 
-In the output, you'll find options to open the app in a
+- **Framework**: React Native with Expo (Expo Router for file-based navigation)
+- **State**: React Context
+- **Backend**: Firebase (Auth, Firestore, Storage)
+- **Notifications**: Expo Push Notifications
+- **UI**: Custom components with Reanimated animations
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Setup
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Scan the QR code with Expo Go (iOS/Android) or run in a simulator.
 
-## Learn more
+## Project Structure
 
-To learn more about developing your project with Expo, look at the following resources:
+```
+TinyPromise/
+├── app/              # Expo Router pages (file-based routing)
+├── components/       # Reusable UI components
+├── contexts/         # React Context providers
+├── hooks/            # Custom hooks
+├── services/         # Firebase and API services
+├── config/           # App configuration
+├── constants/        # Static constants
+├── types/            # TypeScript type definitions
+├── assets/           # Images, fonts, animations
+├── prd.md            # Product Requirements Document
+├── planning.md       # Technical planning
+└── implementations.md # Feature implementation log
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Docs
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- [PRD](prd.md) — Product requirements and user stories
+- [Planning](planning.md) — Technical architecture and data models
+- [Implementation Log](implementations.md) — Feature tracker
